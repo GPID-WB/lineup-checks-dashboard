@@ -59,7 +59,8 @@ fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst" ))
 
 pip2_g   <- pipapi::pip_grp(country = ctr,
                             lkup = lkup,
-                            povline = pl)
+                            povline = pl,
+                            group_by = "wb")
 
 fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
 
