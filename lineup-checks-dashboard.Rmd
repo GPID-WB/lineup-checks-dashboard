@@ -44,6 +44,51 @@ setDT(dt_lineup_new)
 ```
 
 
+```{r lineup-data-wrangling}
+# Indicator names
+lineup_indicators    <- dt_lineup_new |> 
+  fselect(headcount:decile10, spl, spr) |> 
+  colnames()
+
+# Merging OLD and NEW data
+lineups_merged <- joyn::joyn(x             = dt_lineup_new,
+                              y             = dt_lineup_old,
+                              by            = c("country_code",
+                                                "reporting_year",
+                                                "welfare_type",
+                                                "poverty_line",
+                                                "reporting_level"),
+                              match_type    = "1:1",
+                              keep          = "full",
+                              update_values = FALSE,
+                              all           = FALSE,
+                              verbose       = FALSE,
+                              y_vars_to_keep = TRUE,
+                              suffixes = c(".x", ".y"),
+                              keep_common_vars = TRUE)
+
+names_x <- paste0(lineup_indicators, ".x")
+names_y <- paste0(lineup_indicators, ".y")
+
+# Calculate the differences and assign them to new columns
+lineups_merged[, 
+               (paste0(lineup_indicators, "_diff")) := Map(`-`, mget(names_x), mget(names_y))]
+# Percentage of old
+lineups_merged[, 
+               (paste0(lineup_indicators, "_perc")) := Map(`/`, mget(paste0(lineup_indicators, "_diff")), 
+                                                           mget(names_y))]
+# Ratio
+lineups_merged[, 
+               (paste0(lineup_indicators, "_ratio")) := Map(`/`, mget(names_x), mget(names_y))]
+
+
+
+
+```
+
+
+
+
 Compare data schema
 ===========================================================
 
@@ -132,7 +177,7 @@ selectInput(
 agg_indicator <- reactive({
   
   # Copy data table
-  agg_indicator <- copy(aggs_merged)
+  agg_indicator <- aggs_merged
   ind <- paste(input$agg_indicator)
   
   if (!input$agg_percentage == "Ratio") {
@@ -177,7 +222,7 @@ agg_indicator <- reactive({
 agg_baltman <- reactive({
   
   # Copy data table
-  agg_indicator <- copy(aggs_merged)
+  agg_indicator <- aggs_merged
   ind <- paste(input$agg_indicator)
   
   if (!"All" %chin% input$agg_country) {
@@ -208,7 +253,7 @@ agg_baltman <- reactive({
 agg_outlier <- reactive({
   amnt <- input$agg_outlier
   # Copy data table
-  agg_indicator <- copy(aggs_merged)
+  agg_indicator <- aggs_merged
   ind <- paste(input$agg_indicator)
   
   # 
@@ -449,7 +494,7 @@ selectInput(
 survey_indicator <- reactive({
   
   # Copy data table
-  survey_indicator <- copy(surveys_merged)
+  survey_indicator <- surveys_merged
   ind <- paste(input$survey_indicator)
   
   if (!input$survey_percentage == "Ratio") {
@@ -494,7 +539,7 @@ survey_indicator <- reactive({
 survey_baltman <- reactive({
   
   # Copy data table
-  survey_indicator <- copy(surveys_merged)
+  survey_indicator <- surveys_merged
   ind <- paste(input$survey_indicator)
   
   if (!"All" %chin% input$survey_country) {
@@ -525,7 +570,7 @@ survey_baltman <- reactive({
 survey_outlier <- reactive({
   amnt <- input$survey_outlier
   # Copy data table
-  survey_indicator <- copy(surveys_merged)
+  survey_indicator <- surveys_merged
   ind <- paste(input$survey_indicator)
   
   # 
@@ -680,30 +725,30 @@ Lineup years
 
 
 
-```{r}
-# Load and prepare the OLD lineup estimates
-dt_lineup_old_samuel <- dt_lineup_old
+<!-- ```{r} -->
+<!-- # Load and prepare the OLD lineup estimates -->
+<!-- dt_lineup_old_samuel <- dt_lineup_old -->
 
-# Load and prepare the NEW lineup estimates
-dt_lineup_new_samuel <- dt_lineup_new
-lineup_indicators    <- dt_lineup_new |> fselect(headcount:decile10, spl, spr) |> colnames()
-# Merging OLD and NEW data
-lineups_merged <- joyn::joyn(x             = dt_lineup_new_samuel,
-                              y             = dt_lineup_old_samuel,
-                              by            = c("country_code",
-                                                "reporting_year",
-                                                "welfare_type",
-                                                "poverty_line",
-                                                "reporting_level"),
-                              match_type    = "1:1",
-                              keep          = "full",
-                              update_values = FALSE,
-                              all           = FALSE,
-                              verbose       = FALSE,
-                              y_vars_to_keep = TRUE,
-                              suffixes = c(".x", ".y"),
-                              keep_common_vars = TRUE)
-```
+<!-- # Load and prepare the NEW lineup estimates -->
+<!-- dt_lineup_new_samuel <- dt_lineup_new -->
+<!-- lineup_indicators    <- dt_lineup_new |> fselect(headcount:decile10, spl, spr) |> colnames() -->
+<!-- # Merging OLD and NEW data -->
+<!-- lineups_merged <- joyn::joyn(x             = dt_lineup_new_samuel, -->
+<!--                               y             = dt_lineup_old_samuel, -->
+<!--                               by            = c("country_code", -->
+<!--                                                 "reporting_year", -->
+<!--                                                 "welfare_type", -->
+<!--                                                 "poverty_line", -->
+<!--                                                 "reporting_level"), -->
+<!--                               match_type    = "1:1", -->
+<!--                               keep          = "full", -->
+<!--                               update_values = FALSE, -->
+<!--                               all           = FALSE, -->
+<!--                               verbose       = FALSE, -->
+<!--                               y_vars_to_keep = TRUE, -->
+<!--                               suffixes = c(".x", ".y"), -->
+<!--                               keep_common_vars = TRUE) -->
+<!-- ``` -->
 
 
 
@@ -728,7 +773,7 @@ selectInput("lineup_country",
 selectInput("lineup_percentage",
             label = "Percentage (i.t.o old) or real difference:",
             choices = c("Percentage change", "Real difference", "Ratio"),
-            selected = "Percentage",
+            selected = "Percentage change",
             multiple = FALSE)
 
 
@@ -753,125 +798,146 @@ selectInput(
 
 ```
 
+
+
+
+
 ```{r lineup-data-reactive}
+
+
 lineup_indicator <- reactive({
 
-  # Copy data table
-  lineup_indicator <- copy(lineups_merged)
+  # # Copy data table
+  # lineup_indicator <- lineups_merged
   ind <- paste(input$lineup_indicator)
-
-  if (!input$lineup_percentage == "Ratio") {
-    # indicator
-    lineup_indicator <- lineup_indicator |>
-      fmutate(New_minus_old = get(paste0(ind, ".x")) -
-                        get(paste0(ind, ".y")))
-
-
-
-    if (input$lineup_percentage == "Percentage") {
-      lineup_indicator <- lineup_indicator |>
-        fmutate(New_minus_old = 100*New_minus_old/get(paste0(ind, ".y")))
-    }
-  } else {
-      lineup_indicator <- lineup_indicator |>
-          fmutate(New_minus_old = get(paste0(ind, ".x"))/get(paste0(ind, ".y")))
-  }
+  # 
+  # if (!input$lineup_percentage == "Ratio") {
+  #   # indicator
+  #   lineup_indicator <- lineup_indicator |>
+  #     fmutate(New_minus_old = get(paste0(ind, ".x")) -
+  #                       get(paste0(ind, ".y")))
+  # 
+  # 
+  # 
+  #   if (input$lineup_percentage == "Percentage") {
+  #     lineup_indicator <- lineup_indicator |>
+  #       fmutate(New_minus_old = 100*New_minus_old/get(paste0(ind, ".y")))
+  #   }
+  # } else {
+  #     lineup_indicator <- lineup_indicator |>
+  #         fmutate(New_minus_old = get(paste0(ind, ".x"))/get(paste0(ind, ".y")))
+  # }
 
   if (!"All" %chin% input$lineup_country) {
-    lineup_indicator <- lineup_indicator |>
+    lineups_merged <- lineups_merged |>
       fsubset(country_code %in% input$lineup_country)
   }
+  
+  if (input$lineup_percentage == "Ratio") {
+    ind <- paste0(ind, "_ratio")
+  } else if (input$lineup_percentage == "Percentage change") {
+    ind <- paste0(ind, "_perc")
+  } else if (input$lineup_percentage == "Real difference") {
+    ind <- paste0(ind, "_diff")
+  }
+  
+  setnames(lineups_merged, 
+           old = ind, 
+           new = "Indicator")
+  
 
   # Tooltip
-  lineup_indicator[
+  lineups_merged[
     ,
     text_tooltip :=
       paste0(
         "Economy: ", country_code, "\n",
         "Region: ", region_name.x, "\n",
-        "Value: ", round(New_minus_old, 4), "\n",
+        "Value: ", round(Indicator, 4), "\n",
         "Year: ", reporting_year
 
       )
   ]
 
-  lineup_indicator
+  lineups_merged
 
 })
 
-lineup_baltman <- reactive({
-
-  # Copy data table
-  lineup_indicator <- copy(lineups_merged)
-  ind <- paste(input$lineup_indicator)
-
-  if (!"All" %chin% input$lineup_country) {
-    lineup_indicator <- lineup_indicator |>
-      fsubset(country_code %in% input$lineup_country)
-  }
-  lineup_indicator[,
-                 `:=`(diff = get(paste0(ind, ".x")) -
-                        get(paste0(ind, ".y")),
-                      mean_btw = (get(paste0(ind, ".x")) +
-                        get(paste0(ind, ".y")))/2)]
-  # Tooltip
-  lineup_indicator[
-    ,
-    text_tooltip :=
-      paste0(
-        "Economy: ", country_code, "\n",
-        "Region: ", region_name.x, "\n",
-        "Mean old and new: ", round(mean_btw, 4), "\n",
-        "Difference: ", round(diff, 4), "\n",
-        "Year: ", reporting_year
-      )
-  ]
-  lineup_indicator
-
-})
-
-lineup_outlier <- reactive({
-
-  amnt <- input$lineup_outlier
-  # Copy data table
-  lineup_indicator <- copy(lineups_merged)
-
-  ind <- paste(input$lineup_indicator)
-
-  #
-  lineup_indicator[, new_old := get(paste0(ind, ".x")) / get(paste0(ind, ".y"))]
-  lineup_indicator[,
-                 `:=`(thres_new_old_lo = mean(lineups_merged$new_old, na.rm = TRUE) -
-                          amnt * sd(lineups_merged$new_old, na.rm = TRUE),
-                      thres_new_old_hi = mean(lineups_merged$new_old, na.rm = TRUE) +
-                          amnt * sd(lineups_merged$new_old, na.rm = TRUE))]
 
 # 
-#   if (input$lineup_outlier_yes == "Yes") {
-#       lineup_indicator[,
-#                  new_old_out := !(new_old < thres_new_old_hi &
-#                                     new_old > thres_new_old_lo)]
-#   } else {
-#           lineup_indicator[,
-#                  new_old_out := (new_old < thres_new_old_hi &
-#                                     new_old > thres_new_old_lo)]
+# lineup_baltman <- reactive({
+# 
+#   # Copy data table
+#   lineup_indicator <- lineups_merged
+#   ind <- paste(input$lineup_indicator)
+# 
+#   if (!"All" %chin% input$lineup_country) {
+#     lineup_indicator <- lineup_indicator |>
+#       fsubset(country_code %in% input$lineup_country)
 #   }
+#   lineup_indicator[,
+#                  `:=`(diff = get(paste0(ind, ".x")) -
+#                         get(paste0(ind, ".y")),
+#                       mean_btw = (get(paste0(ind, ".x")) +
+#                         get(paste0(ind, ".y")))/2)]
+#   # Tooltip
+#   lineup_indicator[
+#     ,
+#     text_tooltip :=
+#       paste0(
+#         "Economy: ", country_code, "\n",
+#         "Region: ", region_name.x, "\n",
+#         "Mean old and new: ", round(mean_btw, 4), "\n",
+#         "Difference: ", round(diff, 4), "\n",
+#         "Year: ", reporting_year
+#       )
+#   ]
+#   lineup_indicator
 # 
-#   lineup_indicator <- lineup_indicator[new_old_out == TRUE]
+# })
 # 
-#   lineup_indicator <- lineup_indicator |>
-#     fmutate(New = get(paste0(ind, ".x"))*100) |>
-#     fmutate(Old = get(paste0(ind, ".y"))*100) |>
-#     fselect("country_code", "reporting_year", "welfare_type", "Old", "New")
+# lineup_outlier <- reactive({
 # 
-#   setnames(lineup_indicator,
-#            old = c("Old", "New"),
-#            new = c(paste0(c("Old_", "New_"), ind)))
-
-  lineup_indicator
-
-
-})
+#   amnt <- input$lineup_outlier
+#   # Copy data table
+#   lineup_indicator <- lineups_merged
+# 
+#   ind <- paste(input$lineup_indicator)
+# 
+#   #
+#   lineup_indicator[, new_old := get(paste0(ind, ".x")) / get(paste0(ind, ".y"))]
+#   lineup_indicator[,
+#                  `:=`(thres_new_old_lo = mean(lineups_merged$new_old, na.rm = TRUE) -
+#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE),
+#                       thres_new_old_hi = mean(lineups_merged$new_old, na.rm = TRUE) +
+#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE))]
+# 
+# # 
+# #   if (input$lineup_outlier_yes == "Yes") {
+# #       lineup_indicator[,
+# #                  new_old_out := !(new_old < thres_new_old_hi &
+# #                                     new_old > thres_new_old_lo)]
+# #   } else {
+# #           lineup_indicator[,
+# #                  new_old_out := (new_old < thres_new_old_hi &
+# #                                     new_old > thres_new_old_lo)]
+# #   }
+# # 
+# #   lineup_indicator <- lineup_indicator[new_old_out == TRUE]
+# # 
+# #   lineup_indicator <- lineup_indicator |>
+# #     fmutate(New = get(paste0(ind, ".x"))*100) |>
+# #     fmutate(Old = get(paste0(ind, ".y"))*100) |>
+# #     fselect("country_code", "reporting_year", "welfare_type", "Old", "New")
+# # 
+# #   setnames(lineup_indicator,
+# #            old = c("Old", "New"),
+# #            new = c(paste0(c("Old_", "New_"), ind)))
+# 
+#   lineup_indicator
+# 
+# 
+# })
 
 ```
 
@@ -887,7 +953,7 @@ Column {data-width=2400}
 renderPlotly({
   dt <- lineup_indicator()
   g <- ggplot(data = dt, aes(x      = reporting_year,
-                             y      = New_minus_old,
+                             y      = Indicator,
                              colour = country_code,
                              group  = country_code)) +
           geom_point(aes(text = text_tooltip)) +
@@ -932,33 +998,36 @@ renderPlotly({
   g <- ggplotly(g, tooltip = "text")
 
   g
+  
 })
 ```
 
 
 ### Bland-Altman plot
 
-```{r}
-renderPlotly({
-  dt  <- lineup_baltman()
-  ind <- input$lineup_indicator
 
-  g <- ggplot(data = dt,
-              aes(x = mean_btw,
-                  y = diff,
-                  color = region_code.x)) +
-        geom_point(aes(text = text_tooltip)) +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "Bland-Altman Plot",
-         x     = paste("Mean of old and new", ind),
-         y     = paste("Difference between old and new", ind))
 
-  g <- ggplotly(g, tooltip = "text")
+<!-- ```{r} -->
+<!-- renderPlotly({ -->
+<!--   dt  <- lineup_baltman() -->
+<!--   ind <- input$lineup_indicator -->
 
-  g
-})
-```
+<!--   g <- ggplot(data = dt, -->
+<!--               aes(x = mean_btw, -->
+<!--                   y = diff, -->
+<!--                   color = region_code.x)) + -->
+<!--         geom_point(aes(text = text_tooltip)) + -->
+<!--     theme_classic() + -->
+<!--     scale_color_brewer(palette = "Dark2") + -->
+<!--     labs(title = "Bland-Altman Plot", -->
+<!--          x     = paste("Mean of old and new", ind), -->
+<!--          y     = paste("Difference between old and new", ind)) -->
+
+<!--   g <- ggplotly(g, tooltip = "text") -->
+
+<!--   g -->
+<!-- }) -->
+<!-- ``` -->
 
 
 
@@ -970,12 +1039,12 @@ renderPlotly({
 ### Table of outliers
 
 
-```{r}
-renderTable({
-  lineup_outlier()
-})
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   lineup_outlier() -->
+<!-- }) -->
 
-```
+<!-- ``` -->
 
 
 
