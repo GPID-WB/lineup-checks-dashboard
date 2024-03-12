@@ -955,8 +955,140 @@ renderTable({
 
 
 
+Compare missing data
+===========================================================
+
+```{r}
+# SURVEYS-------------------------------------------
+names_x_survey <- paste0(survey_indicators, ".x")
+names_y_survey <- paste0(survey_indicators, ".y")
+
+# Create a logical vector to filter rows
+filter_condition_survey <- Reduce("|", 
+                                 lapply(seq_along(names_x_survey), 
+                                        function(i) {
+  is.na(surveys_merged[[names_x_survey[i]]]) & 
+                                            !is.na(surveys_merged[[names_y_survey[i]]])
+}))
+NAs_x_survey <- surveys_merged[filter_condition_survey,] |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+filter_condition_survey <- Reduce("|", 
+                                 lapply(seq_along(names_x_survey), 
+                                        function(i) {
+  !is.na(surveys_merged[[names_x_survey[i]]]) & 
+                                            is.na(surveys_merged[[names_y_survey[i]]])
+}))
+NAs_y_survey <- surveys_merged[filter_condition_survey,]  |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+
+# LINEUP-------------------------------------------
+
+names_x_lineup <- paste0(lineup_indicators, ".x")
+names_y_lineup <- paste0(lineup_indicators, ".y")
+
+# Create a logical vector to filter rows
+filter_condition_lineup <- Reduce("|", 
+                                 lapply(seq_along(names_x_lineup), 
+                                        function(i) {
+  is.na(lineups_merged[[names_x_lineup[i]]]) & 
+                                            !is.na(lineups_merged[[names_y_lineup[i]]])
+}))
+NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+filter_condition_lineup <- Reduce("|", 
+                                 lapply(seq_along(names_x_lineup), 
+                                        function(i) {
+  !is.na(lineups_merged[[names_x_lineup[i]]]) & 
+                                            is.na(lineups_merged[[names_y_lineup[i]]])
+}))
+NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+```
 
 
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+### In Old but not New (survey)
+
+```{r}
+renderTable({
+  surveys_merged |> 
+    fsubset(.joyn == ".y") |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+})
+```
+
+### In Old but not New (survey)
+
+```{r}
+renderTable({
+  surveys_merged |> 
+    fsubset(.joyn == ".x") |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+})
+```
+
+### NAs in New
+
+```{r}
+renderTable({
+  NAs_x_survey
+})
+```
+
+
+### NAs in Old
+
+```{r}
+renderTable({
+  NAs_y_survey
+})
+```
+
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### In Old but not New (lineup)
+
+```{r}
+renderTable({
+  lineups_merged |> 
+    fsubset(.joyn == ".y") |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+})
+```
+
+### In Old but not New (lineup)
+
+```{r}
+renderTable({
+  lineups_merged |> 
+    fsubset(.joyn == ".x") |> 
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+})
+```
+
+
+
+
+### NAs in New (lineup)
+
+```{r}
+renderTable({
+  NAs_x_lineup
+})
+```
+
+
+### NAs in Old (lineup)
+
+```{r}
+renderTable({
+  NAs_y_lineup
+})
+```
 
 
 
