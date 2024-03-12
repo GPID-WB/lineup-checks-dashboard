@@ -17,7 +17,7 @@ library(fastverse)
 # v1 <- "20230919_2017_01_02_PROD"
 ver <- "20240326_2017_01_02_PROD"
 
-data_pipeline <-  fs::path("//w1wbgencifs01/pip/pip_ingestion_pipeline/pc_data/output-tfs-sync/ITSES-POVERTYSCORE-DATA")
+# data_pipeline <-  fs::path("//w1wbgencifs01/pip/pip_ingestion_pipeline/pc_data/output-tfs-sync/ITSES-POVERTYSCORE-DATA")
 
 data_pipeline <-  fs::path("e:/PIP/pipapi_data/")
 
