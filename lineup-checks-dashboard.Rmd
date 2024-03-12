@@ -1,12 +1,19 @@
 ---
 title: "Lineup Checks"
-output: 
+output:
   flexdashboard::flex_dashboard:
     orientation: columns
     social: menu
     theme: paper
     vertical_layout: scroll
     runtime: shiny
+resource_files:
+- data/aggregates/pip_new.fst
+- data/aggregates/pip_old.fst
+- data/lyears/pip_new.fst
+- data/lyears/pip_old.fst
+- data/syears/pip_new.fst
+- data/syears/pip_old.fst
 ---
 
 
@@ -324,28 +331,28 @@ Survey years
 
 
 ```{r}
-# Load and prepare the OLD survey estimates
-dt_survey_old_samuel <- dt_survey_old
-
-# Load and prepare the NEW survey estimates
-dt_survey_new_samuel <- dt_survey_new
-survey_indicators    <- dt_survey_new |> fselect(headcount:decile10, spl, spr) |> colnames()
-# Merging OLD and NEW data 
-surveys_merged <- joyn::joyn(x             = dt_survey_new_samuel, 
-                              y             = dt_survey_old_samuel, 
-                              by            = c("country_code", 
-                                                "reporting_year", 
-                                                "welfare_type", 
-                                                "poverty_line", 
-                                                "reporting_level"), 
-                              match_type    = "1:1",
-                              keep          = "full", 
-                              update_values = FALSE,
-                              all           = FALSE, 
-                              verbose       = FALSE, 
-                              y_vars_to_keep = TRUE, 
-                              suffixes = c(".x", ".y"), 
-                              keep_common_vars = TRUE)
+# # Load and prepare the OLD survey estimates
+# dt_survey_old_samuel <- dt_survey_old
+# 
+# # Load and prepare the NEW survey estimates
+# dt_survey_new_samuel <- dt_survey_new
+# survey_indicators    <- dt_survey_new |> fselect(headcount:decile10, spl, spr) |> colnames()
+# # Merging OLD and NEW data 
+# surveys_merged <- joyn::joyn(x             = dt_survey_new_samuel, 
+#                               y             = dt_survey_old_samuel, 
+#                               by            = c("country_code", 
+#                                                 "reporting_year", 
+#                                                 "welfare_type", 
+#                                                 "poverty_line", 
+#                                                 "reporting_level"), 
+#                               match_type    = "1:1",
+#                               keep          = "full", 
+#                               update_values = FALSE,
+#                               all           = FALSE, 
+#                               verbose       = FALSE, 
+#                               y_vars_to_keep = TRUE, 
+#                               suffixes = c(".x", ".y"), 
+#                               keep_common_vars = TRUE)
 ```
 
 
@@ -411,7 +418,7 @@ survey_indicator <- reactive({
     
 
     
-    if (input$survey_percentage == "Percentage") {
+    if (input$survey_percentage == "Percentage change") {
       survey_indicator <- survey_indicator |> 
         fmutate(New_minus_old = 100*New_minus_old/get(paste0(ind, ".y")))
     }
@@ -608,15 +615,15 @@ renderPlotly({
 
 
 
-### Table of outliers
+<!-- ### Table of outliers -->
 
 
-```{r}
-renderTable({
-  survey_outlier()
-})
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   survey_outlier() -->
+<!-- }) -->
 
-```
+<!-- ``` -->
 
 
 
@@ -942,15 +949,15 @@ renderPlotly({
 
 
 
-### Table of outliers
+<!-- ### Table of outliers -->
 
 
-```{r}
-renderTable({
-  lineup_outlier()
-})
+<!-- ```{r} -->
+<!-- # renderTable({ -->
+<!-- #   lineup_outlier() -->
+<!-- # }) -->
 
-```
+<!-- ``` -->
 
 
 
@@ -964,21 +971,21 @@ names_x_survey <- paste0(survey_indicators, ".x")
 names_y_survey <- paste0(survey_indicators, ".y")
 
 # Create a logical vector to filter rows
-filter_condition_survey <- Reduce("|", 
-                                 lapply(seq_along(names_x_survey), 
+filter_condition_survey <- Reduce("|",
+                                 lapply(seq_along(names_x_survey),
                                         function(i) {
-  is.na(surveys_merged[[names_x_survey[i]]]) & 
+  is.na(surveys_merged[[names_x_survey[i]]]) &
                                             !is.na(surveys_merged[[names_y_survey[i]]])
 }))
-NAs_x_survey <- surveys_merged[filter_condition_survey,] |> 
+NAs_x_survey <- surveys_merged[filter_condition_survey,] |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
-filter_condition_survey <- Reduce("|", 
-                                 lapply(seq_along(names_x_survey), 
+filter_condition_survey <- Reduce("|",
+                                 lapply(seq_along(names_x_survey),
                                         function(i) {
-  !is.na(surveys_merged[[names_x_survey[i]]]) & 
+  !is.na(surveys_merged[[names_x_survey[i]]]) &
                                             is.na(surveys_merged[[names_y_survey[i]]])
 }))
-NAs_y_survey <- surveys_merged[filter_condition_survey,]  |> 
+NAs_y_survey <- surveys_merged[filter_condition_survey,]  |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 
 # LINEUP-------------------------------------------
@@ -987,21 +994,21 @@ names_x_lineup <- paste0(lineup_indicators, ".x")
 names_y_lineup <- paste0(lineup_indicators, ".y")
 
 # Create a logical vector to filter rows
-filter_condition_lineup <- Reduce("|", 
-                                 lapply(seq_along(names_x_lineup), 
+filter_condition_lineup <- Reduce("|",
+                                 lapply(seq_along(names_x_lineup),
                                         function(i) {
-  is.na(lineups_merged[[names_x_lineup[i]]]) & 
+  is.na(lineups_merged[[names_x_lineup[i]]]) &
                                             !is.na(lineups_merged[[names_y_lineup[i]]])
 }))
-NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |> 
+NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
-filter_condition_lineup <- Reduce("|", 
-                                 lapply(seq_along(names_x_lineup), 
+filter_condition_lineup <- Reduce("|",
+                                 lapply(seq_along(names_x_lineup),
                                         function(i) {
-  !is.na(lineups_merged[[names_x_lineup[i]]]) & 
+  !is.na(lineups_merged[[names_x_lineup[i]]]) &
                                             is.na(lineups_merged[[names_y_lineup[i]]])
 }))
-NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |> 
+NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 ```
 
@@ -1013,8 +1020,8 @@ Column {data-width=1000}
 
 ```{r}
 renderTable({
-  surveys_merged |> 
-    fsubset(.joyn == "y") |> 
+  surveys_merged |>
+    fsubset(.joyn == "y") |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
@@ -1023,8 +1030,8 @@ renderTable({
 
 ```{r}
 renderTable({
-  surveys_merged |> 
-    fsubset(.joyn == "x") |> 
+  surveys_merged |>
+    fsubset(.joyn == "x") |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
@@ -1054,8 +1061,8 @@ Column {data-width=1000}
 
 ```{r}
 renderTable({
-  lineups_merged |> 
-    fsubset(.joyn == "y") |> 
+  lineups_merged |>
+    fsubset(.joyn == "y") |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
@@ -1064,8 +1071,8 @@ renderTable({
 
 ```{r}
 renderTable({
-  lineups_merged |> 
-    fsubset(.joyn == "x") |> 
+  lineups_merged |>
+    fsubset(.joyn == "x") |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
