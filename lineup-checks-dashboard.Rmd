@@ -201,14 +201,126 @@ lineups_merged[,
 #  lineup_indicator
 ```
 
+Trends: Old vs New
+===========================================================
+
+
+Column {data-width=100}
+-----------------------------------------------------------------------
+```{r sidebar-plot-trends}
+# Select Indicator
+selectInput("trends_indicator", 
+            label = "Compare indicator (surveys)",
+            choices = survey_indicators,
+            selected = "mean")
+
+# # Select Indicator
+# selectInput("trends_indicator", 
+#             label = "Compare indicator (lineup)",
+#             choices = lineup_indicators,
+#             selected = "mean")
+
+# Select countries
+selectInput("trend_country",
+            label = "Economies (survey)",
+            choices = c(surveys_merged$country_code |> funique()),
+            selected = "ARE",
+            multiple = FALSE)
+# 
+# # Select countries
+# selectInput("trend_country", 
+#             label = "Economies (lineup)",
+#             choices = c(lineups_merged$country_code |> funique()),
+#             selected = "COL", 
+#             multiple = FALSE)
+```
+
+Column {data-width=2400}
+-----------------------------------------------------------------------
+
+### Surveys
+
+
+    
+```{r}
+renderPlotly({
+  
+  
+  ind <- input$trends_indicator
+  
+  g <- ggplot(data = surveys_merged[country_code == input$trend_country,] |> 
+                fmutate(text_tooltip_x = paste0(
+                        "Economy: ", country_code, "\n",
+                        "Region: ", region_name.x, "\n", 
+                        "Value: ", round(get(paste0(ind, ".x")), 4), "\n", 
+                        "Year: ", reporting_year), 
+                    text_tooltip_y = paste0(
+                        "Economy: ", country_code, "\n",
+                        "Region: ", region_name.y, "\n", 
+                        "Value: ", round(get(paste0(ind, ".y")), 4), "\n", 
+                        "Year: ", reporting_year))) +
+    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New", text = text_tooltip_x)) + #, color = 'darkgreen') + 
+    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New")) + #, color = 'darkgreen') +
+    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old", text = text_tooltip_y)) + #,, color = 'coral') + 
+    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old")) + #,, color = 'coral') + 
+    scale_color_manual(values = c("New" = "darkgreen", "Old" = "coral")) +
+    theme_classic() +
+    labs(title = paste0("Compare survey trends in indicators of new and old data for", input$trend_country) , 
+         x     = "Reporting Year", 
+         y     = stringr::str_to_title(paste0(ind)), 
+         color = "Old or new")
+  
+    g <- ggplotly(g, tooltip = "text")
+  
+    g
+  
+})
+```
+
+
+### Lineups
+
+```{r}
+renderPlotly({
+  
+  ind <- input$trends_indicator
+  
+   g <- ggplot(data = lineups_merged[country_code == input$trend_country,] |> 
+                fmutate(text_tooltip_x = paste0(
+                        "Economy: ", country_code, "\n",
+                        "Region: ", region_name.x, "\n", 
+                        "Value: ", round(get(paste0(ind, ".x")), 4), "\n", 
+                        "Year: ", reporting_year), 
+                    text_tooltip_y = paste0(
+                        "Economy: ", country_code, "\n",
+                        "Region: ", region_name.y, "\n", 
+                        "Value: ", round(get(paste0(ind, ".y")), 4), "\n", 
+                        "Year: ", reporting_year))) +
+    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".x")), text = text_tooltip_x, color = "New")) +
+    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New")) +
+    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".y")), text = text_tooltip_y, color = "Old")) +
+    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old")) +
+    scale_color_manual(values = c("New" = "darkgreen", "Old" = "coral")) +
+    theme_classic() +
+    labs(title = paste0("Compare lineup trends in indicators of new and old data for", input$trend_country), 
+         x     = "Reporting Year", 
+         y     = stringr::str_to_title(paste0(ind)), 
+         color = "Old or new")
+  
+    
+    g <- ggplotly(g, tooltip = "text")
+  
+    g
+  
+})
+```
+
 
 
 Survey years
 ===========================================================
 
 
-Column {data-width=650}
------------------------------------------------------------------------
 
 
 ```{r}
