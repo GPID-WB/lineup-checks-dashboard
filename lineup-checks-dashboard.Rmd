@@ -1014,17 +1014,17 @@ Column {data-width=1000}
 ```{r}
 renderTable({
   surveys_merged |> 
-    fsubset(.joyn == ".y") |> 
+    fsubset(.joyn == "y") |> 
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
 
-### In Old but not New (survey)
+### In New but not Old (survey)
 
 ```{r}
 renderTable({
   surveys_merged |> 
-    fsubset(.joyn == ".x") |> 
+    fsubset(.joyn == "x") |> 
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
@@ -1055,17 +1055,17 @@ Column {data-width=1000}
 ```{r}
 renderTable({
   lineups_merged |> 
-    fsubset(.joyn == ".y") |> 
+    fsubset(.joyn == "y") |> 
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
 
-### In Old but not New (lineup)
+### In New but not Old (lineup)
 
 ```{r}
 renderTable({
   lineups_merged |> 
-    fsubset(.joyn == ".x") |> 
+    fsubset(.joyn == "x") |> 
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 })
 ```
