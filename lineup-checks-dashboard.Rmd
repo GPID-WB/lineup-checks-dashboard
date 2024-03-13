@@ -272,7 +272,7 @@ shiny::selectInput("trend_country",
             multiple = FALSE)
 ```
 
-Column {data-width=2400}
+Column
 -----------------------------------------------------------------------
 
 ### Surveys
