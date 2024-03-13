@@ -7,20 +7,20 @@ output:
     theme: paper
     vertical_layout: scroll
     runtime: shiny
-    resource_files:
-    - data/use/dt_survey_old.fst
-    - data/use/dt_survey_new.fst
-    - data/use/dt_lineup_old.fst
-    - data/use/dt_lineup_new.fst
-    - data/use/dt_agg_old.fst
-    - data/use/dt_agg_new.fst
-resource_files:
-- data/use/dt_survey_old.fst
-- data/use/dt_survey_new.fst
-- data/use/dt_lineup_old.fst
-- data/use/dt_lineup_new.fst
-- data/use/dt_agg_old.fst
-- data/use/dt_agg_new.fst
+#     resource_files:
+#     - data/use/dt_survey_old.fst
+#     - data/use/dt_survey_new.fst
+#     - data/use/dt_lineup_old.fst
+#     - data/use/dt_lineup_new.fst
+#     - data/use/dt_agg_old.fst
+#     - data/use/dt_agg_new.fst
+# resource_files:
+# - data/use/dt_survey_old.fst
+# - data/use/dt_survey_new.fst
+# - data/use/dt_lineup_old.fst
+# - data/use/dt_lineup_new.fst
+# - data/use/dt_agg_old.fst
+# - data/use/dt_agg_new.fst
 ---
 
 
@@ -28,56 +28,55 @@ resource_files:
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(ggplot2)
-library(plotly)
-library(collapse)
-library(fst)
-library(joyn)
-library(data.table)
-library(purrr)
 library(RColorBrewer)
-#library(shiny)
+library(plotly)
+library(joyn)
+library(purrr)
+library(fst)
+library(fastverse)
+library(shiny)
 ```
 
 
-```{r}
-# source("R/utils.R")
-# pl <- 2.15
-# 
-# # Aggregates
-# dt_agg_old <- pipr::get_wb(povline = pl) |> 
-#   qDT()
-# dt_agg_new <- load_from_repo("aggregates.fst") 
-# dt_agg_old <- dt_agg_old |> 
-#   frename(reporting_year = year)
-# 
-# # Survey years
-# dt_survey_old <- pipr::get_stats(povline = pl) |> 
-#   qDT()
-# dt_survey_new <- load_from_repo("syears.fst") 
-# dt_survey_old <- dt_survey_old |> 
-#   frename(reporting_year = year)
-# 
-# # aggregates
-# dt_lineup_old <- pipr::get_stats(povline = pl, 
-#                                  fill_gaps = TRUE) |> 
-#   qDT()
-# dt_lineup_old <- dt_lineup_old |> 
-#   frename(reporting_year = year)
-# dt_lineup_new <- load_from_repo("lyears.fst")
+```{r global, include=FALSE}
+source("R/utils.R")
+pl <- 2.15
 
-dt_agg_old    <- read_fst(path = here::here("data", "use", "dt_agg_old.fst"))
-dt_agg_new    <- read_fst(path = here::here("data", "use", "dt_agg_new.fst"))
-dt_survey_old <- read_fst(path = here::here("data", "use", "dt_survey_old.fst"))
-dt_survey_new <- read_fst(path = here::here("data", "use", "dt_survey_new.fst"))
-dt_lineup_old <- read_fst(path = here::here("data", "use", "dt_lineup_old.fst"))
-dt_lineup_new <- read_fst(path = here::here("data", "use", "dt_lineup_new.fst"))
+# Aggregates
+dt_agg_old <- pipr::get_wb(povline = pl) |>
+  qDT()
+dt_agg_new <- load_from_repo("aggregates.fst")
+dt_agg_old <- dt_agg_old |>
+  frename(reporting_year = year)
 
-dt_agg_old    <- qDT(dt_agg_old)
-dt_agg_new    <- qDT(dt_agg_new)
-dt_survey_old <- qDT(dt_survey_old)
-dt_survey_new <- qDT(dt_survey_new)
-dt_lineup_old <- qDT(dt_lineup_old)
-dt_lineup_new <- qDT(dt_lineup_new)
+# Survey years
+dt_survey_old <- pipr::get_stats(povline = pl) |>
+  qDT()
+dt_survey_new <- load_from_repo("syears.fst")
+dt_survey_old <- dt_survey_old |>
+  frename(reporting_year = year)
+
+# aggregates
+dt_lineup_old <- pipr::get_stats(povline = pl,
+                                 fill_gaps = TRUE) |>
+  qDT()
+dt_lineup_old <- dt_lineup_old |>
+  frename(reporting_year = year)
+dt_lineup_new <- load_from_repo("lyears.fst")
+
+# dt_agg_old    <- read_fst(path = here::here("data", "use", "dt_agg_old.fst"))
+# dt_agg_new    <- read_fst(path = here::here("data", "use", "dt_agg_new.fst"))
+# dt_survey_old <- read_fst(path = here::here("data", "use", "dt_survey_old.fst"))
+# dt_survey_new <- read_fst(path = here::here("data", "use", "dt_survey_new.fst"))
+# dt_lineup_old <- read_fst(path = here::here("data", "use", "dt_lineup_old.fst"))
+# dt_lineup_new <- read_fst(path = here::here("data", "use", "dt_lineup_new.fst"))
+# 
+# dt_agg_old    <- qDT(dt_agg_old)
+# dt_agg_new    <- qDT(dt_agg_new)
+# dt_survey_old <- qDT(dt_survey_old)
+# dt_survey_new <- qDT(dt_survey_new)
+# dt_lineup_old <- qDT(dt_lineup_old)
+# dt_lineup_new <- qDT(dt_lineup_new)
 
 ```
 
@@ -153,39 +152,39 @@ lineup_indicators    <- dt_lineup_new |>
 
 
 # Merging OLD and NEW data
-# lineups_merged <- joyn::joyn(x             = dt_lineup_new,
-#                               y             = dt_lineup_old,
-#                               by            = c("country_code",
-#                                                 "reporting_year",
-#                                                 "welfare_type",
-#                                                 "poverty_line",
-#                                                 "reporting_level"),
-#                               match_type    = "1:1",
-#                               keep          = "full",
-#                               update_values = FALSE,
-#                               all           = FALSE,
-#                               verbose       = FALSE,
-#                               y_vars_to_keep = TRUE,
-#                               suffixes = c(".x", ".y"),
-#                               keep_common_vars = TRUE)
-# 
-lineups_merged <- join(x             = dt_lineup_new,
+lineups_merged <- joyn::joyn(x             = dt_lineup_new,
                               y             = dt_lineup_old,
-                              on            = c("country_code",
+                              by            = c("country_code",
                                                 "reporting_year",
                                                 "welfare_type",
                                                 "poverty_line",
                                                 "reporting_level"),
-                              #match_type    = "1:1",
-                              how          = "full",
-                              #update_values = FALSE,
-                              #all           = FALSE,
+                              match_type    = "1:1",
+                              keep          = "full",
+                              update_values = FALSE,
+                              all           = FALSE,
                               verbose       = FALSE,
-                              #y_vars_to_keep = TRUE,
-                              suffix = c(".x", ".y"),
-                              column = list(".joyn", c("x", "y", "x & y"))
-                              #keep_common_vars = TRUE
-                       )
+                              y_vars_to_keep = TRUE,
+                              suffixes = c(".x", ".y"),
+                              keep_common_vars = TRUE)
+# 
+# lineups_merged <- join(x             = dt_lineup_new,
+#                               y             = dt_lineup_old,
+#                               on            = c("country_code",
+#                                                 "reporting_year",
+#                                                 "welfare_type",
+#                                                 "poverty_line",
+#                                                 "reporting_level"),
+#                               #match_type    = "1:1",
+#                               how          = "full",
+#                               #update_values = FALSE,
+#                               #all           = FALSE,
+#                               verbose       = FALSE,
+#                               #y_vars_to_keep = TRUE,
+#                               suffix = c(".x", ".y"),
+#                               column = list(".joyn", c("x", "y", "x & y"))
+#                               #keep_common_vars = TRUE
+#                        )
 
 
 names_x <- paste0(lineup_indicators, ".x")
@@ -318,774 +317,51 @@ Column {data-width=2400}
 
 
 ```{r}
-renderPlotly({
-
-
-  ind <- input$trends_indicator
-
-  g <- ggplot(data = surveys_merged[country_code == input$trend_country,] |>
-                fmutate(text_tooltip_x = paste0(
+ind <- reactive({
+  input$trends_indicator
+})
+# country 
+ct <- reactive({
+  input$trend_country
+})
+# reactive table for trends
+TT <- reactive({
+  surveys_merged[country_code == ct()
+                 ][, 
+                   `:=`(
+                       yx = get(paste0(ind(), ".x")),
+                       yy = get(paste0(ind(), ".y"))
+                     ) ][, 
+                         text :=  paste0(
                         "Economy: ", country_code, "\n",
                         "Region: ", region_name.x, "\n",
-                        "Value: ", round(get(paste0(ind, ".x")), 4), "\n",
-                        "Year: ", reporting_year),
-                    text_tooltip_y = paste0(
-                        "Economy: ", country_code, "\n",
-                        "Region: ", region_name.y, "\n",
-                        "Value: ", round(get(paste0(ind, ".y")), 4), "\n",
-                        "Year: ", reporting_year))) +
-    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New", text = text_tooltip_x)) + #, color = 'darkgreen') +
-    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New")) + #, color = 'darkgreen') +
-    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old", text = text_tooltip_y)) + #,, color = 'coral') +
-    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old")) + #,, color = 'coral') +
-    scale_color_manual(values = c("New" = "darkgreen", "Old" = "coral")) +
+                        "New Value:", round(yx, 4), "\n",
+                        "Old Value:", round(yy, 4), "\n",
+                        "Year: ", reporting_year)
+                        ] 
+})
+
+renderPlotly({
+
+  g <- ggplot(data = TT(), 
+              aes(x = reporting_year, 
+                  label = text)) +
+    geom_line(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
+    geom_point(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
+    geom_line(aes(y = yy, color = "Old")) + #,, color = 'coral') +
+    geom_point(aes(y = yy, color = "Old")) + #,, color = 'coral') +
+     scale_color_manual(values = c("New" = "darkgreen", 
+                                   "Old" = "coral")) +
     theme_classic() +
-    labs(title = paste0("Compare survey trends in indicators of new and old data for", input$trend_country) ,
+    labs(title = 
+           paste0("Compare survey trends in indicators of 
+                  new and old data for ", ct()) ,
          x     = "Reporting Year",
-         y     = stringr::str_to_title(paste0(ind)),
-         color = "Old or new")
+         y     = stringr::str_to_title(paste0(ind())))
 
-    g <- ggplotly(g, tooltip = "text")
-
-    g
+    # ggplotly(g, tooltip = "text")
+    ggplotly(g, tooltip = c("label"))
 
 })
 ```
-
-
-### Lineups
-
-```{r}
-renderPlotly({
-
-  ind <- input$trends_indicator
-
-   g <- ggplot(data = lineups_merged[country_code == input$trend_country,] |>
-                fmutate(text_tooltip_x = paste0(
-                        "Economy: ", country_code, "\n",
-                        "Region: ", region_name.x, "\n",
-                        "Value: ", round(get(paste0(ind, ".x")), 4), "\n",
-                        "Year: ", reporting_year),
-                    text_tooltip_y = paste0(
-                        "Economy: ", country_code, "\n",
-                        "Region: ", region_name.y, "\n",
-                        "Value: ", round(get(paste0(ind, ".y")), 4), "\n",
-                        "Year: ", reporting_year))) +
-    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".x")), text = text_tooltip_x, color = "New")) +
-    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".x")), color = "New")) +
-    geom_point(aes(x = reporting_year, y = get(paste0(ind, ".y")), text = text_tooltip_y, color = "Old")) +
-    geom_line(aes(x = reporting_year, y = get(paste0(ind, ".y")), color = "Old")) +
-    scale_color_manual(values = c("New" = "darkgreen", "Old" = "coral")) +
-    theme_classic() +
-    labs(title = paste0("Compare lineup trends in indicators of new and old data for", input$trend_country),
-         x     = "Reporting Year",
-         y     = stringr::str_to_title(paste0(ind)),
-         color = "Old or new")
-
-
-    g <- ggplotly(g, tooltip = "text")
-
-    g
-
-})
-```
-
-
-
-Survey years
-===========================================================
-
-
-
-Column {data-width=100}
------------------------------------------------------------------------
-```{r sidebar-plot-survey-3}
-# Select Indicator
-shiny::selectInput("survey_indicator",
-            label = "Compare indicator:",
-            choices = survey_indicators,
-            selected = "headcount")
-
-# Select countries
-shiny::selectInput("survey_country",
-            label = "Economies:",
-            choices = c("All", surveys_merged$country_code |> funique()),
-            selected = "COL",
-            multiple = TRUE)
-
-
-# Select countries
-shiny::selectInput("survey_percentage",
-            label = "Percentage (i.t.o old) or real difference:",
-            choices = c("Percentage change", "Real difference", "Ratio"),
-            selected = "Percentage",
-            multiple = FALSE)
-
-
-# Select countries
-# numericInput(
-#   "survey_outlier",
-#   label = "Outlier detection - sd threshold",
-#   value = 2,
-#   min   = 0,
-#   max   = 5,
-#   step = 0.1,
-#   width = NULL
-# )
-
-shiny::selectInput(
-  "survey_outlier_yes",
-  label = "Is outlier",
-  choices = c("Yes", "No"),
-  selected = "Yes",
-  multiple = FALSE
-)
-
-```
-
-```{r survey-data-reactive}
-survey_indicator <- shiny::reactive({
-
-  # Copy data table
-  survey_indicator <- surveys_merged
-  ind <- paste(input$survey_indicator)
-
-  if (!input$survey_percentage == "Ratio") {
-     if (input$survey_percentage == "Percentage change") {
-
-      # indicator
-      setnames(survey_indicator,
-               old = (paste0(ind, "_perc")),
-               new = "New_minus_old")
-
-        } else {
-    # indicator
-    setnames(survey_indicator,
-             old = (paste0(ind, "_diff")),
-             new = "New_minus_old")
-    }
-  } else {
-      setnames(survey_indicator,
-               old = (paste0(ind, "_ratio")),
-               new = "New_minus_old")
-  }
-
-  if (!"All" %chin% input$survey_country) {
-    survey_indicator <- survey_indicator |>
-      fsubset(country_code %in% input$survey_country)
-  }
-
-  # Tooltip
-  survey_indicator[
-    ,
-    text_tooltip :=
-      paste0(
-        "Economy: ", country_code, "\n",
-        "Region: ", region_name.x, "\n",
-        "Value: ", round(New_minus_old, 4), "\n",
-        "Year: ", reporting_year
-      )
-  ]
-
-  survey_indicator
-
-})
-
-survey_baltman <- shiny::reactive({
-
-  # Copy data table
-  survey_indicator <- surveys_merged
-  ind <- paste(input$survey_indicator)
-
-  if (!"All" %chin% input$survey_country) {
-    survey_indicator <- survey_indicator |>
-      fsubset(country_code %in% input$survey_country)
-  }
-  survey_indicator[,
-                 `:=`(diff = get(paste0(ind, ".x")) -
-                        get(paste0(ind, ".y")),
-                      mean_btw = (get(paste0(ind, ".x")) +
-                        get(paste0(ind, ".y")))/2)]
-  # Tooltip
-  survey_indicator[
-    ,
-    text_tooltip :=
-      paste0(
-        "Economy: ", country_code, "\n",
-        "Region: ", region_name.x, "\n",
-        "Mean old and new: ", round(mean_btw, 4), "\n",
-        "Difference: ", round(diff, 4), "\n",
-        "Year: ", reporting_year
-      )
-  ]
-  survey_indicator
-
-})
-
-survey_outlier <- shiny::reactive({
-
-  # standard dev
-  amnt <- input$survey_outlier
-  # Copy data table
-  survey_indicator <- surveys_merged
-  ind <- paste(input$survey_indicator)
-
-  # Define low and high thresholds
-  surveys_merged[, new_old := get(paste0(ind, ".x")) / get(paste0(ind, ".y"))]
-  surveys_merged[,
-                 `:=`(thres_new_old_lo = mean(surveys_merged$new_old, na.rm = TRUE) -
-                          2*sd(surveys_merged$new_old, na.rm = TRUE),
-                      thres_new_old_hi = mean(surveys_merged$new_old, na.rm = TRUE) +
-                          2*sd(surveys_merged$new_old, na.rm = TRUE))]
-
-  # Inside or outside threshold
-  if (input$survey_outlier_yes == "Yes") {
-      surveys_merged[,
-                 new_old_out := !(new_old < thres_new_old_hi &
-                                    new_old > thres_new_old_lo)]
-  } else {
-          surveys_merged[,
-                 new_old_out := (new_old < thres_new_old_hi &
-                                    new_old > thres_new_old_lo)]
-  }
-
-  surveys_merged <- surveys_merged[new_old_out == TRUE]
-
-  surveys_merged <- surveys_merged |>
-    fmutate(New = get(paste0(ind, ".x"))*100) |>
-    fmutate(Old = get(paste0(ind, ".y"))*100) |>
-    fselect("country_code", "reporting_year", "welfare_type", "Old", "New")
-
-  setnames(surveys_merged,
-           old = c("Old", "New"),
-           new = c(paste0(c("Old_", "New_"), ind)))
-
-  surveys_merged
-
-
-})
-
-```
-
-
-
-Column {data-width=2400}
------------------------------------------------------------------------
-
-### Chart A
-
-
-```{r plot-survey}
-renderPlotly({
-  dt <- survey_indicator()
-  g <- ggplot(data = dt, aes(x      = reporting_year,
-                             y      = New_minus_old,
-                             colour = region_code.x,
-                             group  = country_code)) +
-          geom_point(aes(text = text_tooltip)) +
-          geom_line() +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "New survey estimate minus old",
-         x     = "Reporting Year",
-         y     = paste0("Difference in ",
-                        input$survey_indicator,
-                        ifelse(input$survey_percentage == "Percentage", " %", ""),
-                        " (new minus old)"))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-
-})
-
-```
-
-### Scatterplot of old vs new estimates
-
-```{r}
-renderPlotly({
-  dt  <- survey_indicator()
-  ind <- input$survey_indicator
-
-  g <- ggplot(data = dt,
-              aes(x = get(paste0(ind, ".y")),
-                  y = get(paste0(ind, ".x")),
-                  color = region_code.x,
-                  group = country_code)) +
-    geom_point(aes(text = text_tooltip)) +
-    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "Scatter plot new survey estimate minus old",
-         x     = paste("Old", ind),
-         y     = paste("New", ind))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-})
-```
-
-
-### Bland-Altman plot
-
-```{r}
-renderPlotly({
-  dt  <- survey_baltman()
-  ind <- input$survey_indicator
-
-  g <- ggplot(data = dt,
-              aes(x = mean_btw,
-                  y = diff,
-                  color = region_code.x)) +
-        geom_point(aes(text = text_tooltip)) +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "Bland-Altman Plot",
-         x     = paste("Mean of old and new", ind),
-         y     = paste("Difference between old and new", ind))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-})
-```
-
-
-
-
-
-
-
-
-### Table of outliers
-
-
-```{r}
-shiny::renderTable({
-  survey_outlier()
-})
-
-```
-
-
-
-
-
-Lineup years
-===========================================================
-
-
-
-
-Column {data-width=100}
------------------------------------------------------------------------
-```{r sidebar-plot-lineup-3}
-# Select Indicator
-shiny::selectInput("lineup_indicator",
-            label = "Compare indicator:",
-            choices = lineup_indicators,
-            selected = "headcount")
-
-# Select countries
-shiny::selectInput("lineup_country",
-            label = "Economies:",
-            choices = c("All", lineups_merged$country_code |> funique()),
-            selected = "COL",
-            multiple = TRUE)
-
-
-# Select countries
-shiny::selectInput("lineup_percentage",
-            label = "Percentage (i.t.o old) or real difference:",
-            choices = c("Percentage change", "Real difference", "Ratio"),
-            selected = "Percentage change",
-            multiple = FALSE)
-
-
-# # Select countries
-# numericInput(
-#   "lineup_outlier",
-#   label = "Outlier detection - sd threshold",
-#   value = 2,
-#   min   = 0,
-#   max   = 5,
-#   step = 0.1,
-#   width = NULL
-# )
-
-shiny::selectInput(
-  "lineup_outlier_yes",
-  label = "Is outlier",
-  choices = c("Yes", "No"),
-  selected = "Yes",
-  multiple = FALSE
-)
-
-```
-
-
-
-
-
-```{r lineup-data-reactive}
-
-
-lineup_indicator <- shiny::reactive({
-
-  lineups_merged <- copy(lineups_merged)
-  ind <- paste(input$lineup_indicator)
-
-  if (!"All" %chin% input$lineup_country) {
-    lineups_merged <- lineups_merged |>
-      fsubset(country_code %in% input$lineup_country)
-  }
-
-  if (input$lineup_percentage == "Ratio") {
-    ind <- paste0(ind, "_ratio")
-  } else if (input$lineup_percentage == "Percentage change") {
-    ind <- paste0(ind, "_perc")
-  } else if (input$lineup_percentage == "Real difference") {
-    ind <- paste0(ind, "_diff")
-  }
-
-  setnames(lineups_merged,
-           old = ind,
-           new = "Indicator")
-
-  # Tooltip
-  lineups_merged[
-    ,
-    text_tooltip :=
-      paste0(
-        "Economy: ", country_code, "\n",
-        "Region: ", region_name.x, "\n",
-        "Value: ", round(Indicator, 4), "\n",
-        "Year: ", reporting_year
-
-      )
-  ]
-
-  lineups_merged
-
-})
-
-
-
-lineup_baltman <- shiny::reactive({
-
-  # Copy data table
-  lineup_indicator <- lineups_merged
-  ind <- paste(input$lineup_indicator)
-
-  if (!"All" %chin% input$lineup_country) {
-    lineup_indicator <- lineup_indicator |>
-      fsubset(country_code %in% input$lineup_country)
-  }
-  lineup_indicator[,
-                 `:=`(diff = get(paste0(ind, ".x")) -
-                        get(paste0(ind, ".y")),
-                      mean_btw = (get(paste0(ind, ".x")) +
-                        get(paste0(ind, ".y")))/2)]
-  # Tooltip
-  lineup_indicator[
-    ,
-    text_tooltip :=
-      paste0(
-        "Economy: ", country_code, "\n",
-        "Region: ", region_name.x, "\n",
-        "Mean old and new: ", round(mean_btw, 4), "\n",
-        "Difference: ", round(diff, 4), "\n",
-        "Year: ", reporting_year
-      )
-  ]
-  lineup_indicator
-
-})
-
-
-lineup_outlier <- shiny::reactive({
-
-  # amnt <- input$lineup_outlier
-  # # Copy data table
-  lineup_indicator <- lineups_merged
-  #
-  ind <- paste(input$lineup_indicator)
-
-  # #
-  # lineup_indicator[, new_old := get(paste0(ind, ".x")) / get(paste0(ind, ".y"))]
-  # lineup_indicator[,
-  #                `:=`(thres_new_old_lo = mean(lineups_merged$new_old, na.rm = TRUE) -
-  #                         amnt * sd(lineups_merged$new_old, na.rm = TRUE),
-  #                     thres_new_old_hi = mean(lineups_merged$new_old, na.rm = TRUE) +
-  #                         amnt * sd(lineups_merged$new_old, na.rm = TRUE))]
-#return()
-
-if (input$lineup_outlier_yes == "Yes") {
-    lineup_indicator[,
-               new_old_out := !(get(paste0(ind, "_ratio")) < get(paste0(ind, "_thresh_high")) &
-                                  get(paste0(ind, "_ratio")) > get(paste0(ind, "_thresh_low")))]
-} else {
-    lineup_indicator[,
-               new_old_out := (get(paste0(ind, "_ratio")) < get(paste0(ind, "_thresh_high")) &
-                                  get(paste0(ind, "_ratio")) > get(paste0(ind, "_thresh_low")))]
-}
-
-lineup_indicator <- lineup_indicator[new_old_out == TRUE, ]
-
-lineup_indicator <- lineup_indicator |>
-  fmutate(New = get(paste0(ind, ".x"))*100) |>
-  fmutate(Old = get(paste0(ind, ".y"))*100) |>
-  fselect("country_code", "reporting_year", "welfare_type", "Old", "New")
-
-setnames(lineup_indicator,
-         old = c("Old", "New"),
-         new = c(paste0(c("Old_", "New_"), ind)))
-
-lineup_indicator
-
-})
-
-```
-
-
-
-Column {data-width=2400}
------------------------------------------------------------------------
-
-### Chart A
-
-
-```{r plot-lineup}
-renderPlotly({
-  dt <- lineup_indicator()
-  g <- ggplot(data = dt, aes(x      = reporting_year,
-                             y      = Indicator,
-                             colour = region_code.x,
-                             group  = country_code)) +
-          geom_point(aes(text = text_tooltip)) +
-          geom_line() +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "New lineup estimate minus old",
-         x     = "Reporting Year",
-         y     = paste0("Difference in ",
-                        input$lineup_indicator,
-                        ifelse(input$lineup_percentage == "Percentage", " %", ""),
-                        " (new minus old)"))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-
-})
-
-```
-
-### Scatterplot of old vs new estimates
-
-```{r}
-renderPlotly({
-  dt  <- lineup_indicator()
-  ind <- input$lineup_indicator
-
-  g <- ggplot(data = dt,
-              aes(x = get(paste0(ind, ".y")),
-                  y = get(paste0(ind, ".x")),
-                  color = region_code.x,
-                  group = country_code)) +
-    geom_point(aes(text = text_tooltip)) +
-    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "Scatter plot new lineup estimate minus old",
-         x     = paste("Old", ind),
-         y     = paste("New", ind))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-
-})
-```
-
-
-### Bland-Altman plot
-
-
-
-```{r}
-renderPlotly({
-  dt  <- lineup_baltman()
-  ind <- input$lineup_indicator
-
-  g <- ggplot(data = dt,
-              aes(x = mean_btw,
-                  y = diff,
-                  color = region_code.x)) +
-        geom_point(aes(text = text_tooltip)) +
-    theme_classic() +
-    scale_color_brewer(palette = "Dark2") +
-    labs(title = "Bland-Altman Plot",
-         x     = paste("Mean of old and new", ind),
-         y     = paste("Difference between old and new", ind))
-
-  g <- ggplotly(g, tooltip = "text")
-
-  g
-})
-```
-
-
-
-### Table of outliers
-
-
-```{r}
-shiny::renderTable({
-  lineup_outlier()
-})
-
-```
-
-
-
-
-Compare missing data
-===========================================================
-
-```{r}
-# SURVEYS-------------------------------------------
-names_x_survey <- paste0(survey_indicators, ".x")
-names_y_survey <- paste0(survey_indicators, ".y")
-
-# Create a logical vector to filter rows
-filter_condition_survey <- Reduce("|",
-                                 lapply(seq_along(names_x_survey),
-                                        function(i) {
-  is.na(surveys_merged[[names_x_survey[i]]]) &
-                                            !is.na(surveys_merged[[names_y_survey[i]]])
-}))
-NAs_x_survey <- surveys_merged[filter_condition_survey,] |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-filter_condition_survey <- Reduce("|",
-                                 lapply(seq_along(names_x_survey),
-                                        function(i) {
-  !is.na(surveys_merged[[names_x_survey[i]]]) &
-                                            is.na(surveys_merged[[names_y_survey[i]]])
-}))
-NAs_y_survey <- surveys_merged[filter_condition_survey,]  |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-
-# LINEUP-------------------------------------------
-
-names_x_lineup <- paste0(lineup_indicators, ".x")
-names_y_lineup <- paste0(lineup_indicators, ".y")
-
-# Create a logical vector to filter rows
-filter_condition_lineup <- Reduce("|",
-                                 lapply(seq_along(names_x_lineup),
-                                        function(i) {
-  is.na(lineups_merged[[names_x_lineup[i]]]) &
-                                            !is.na(lineups_merged[[names_y_lineup[i]]])
-}))
-NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-filter_condition_lineup <- Reduce("|",
-                                 lapply(seq_along(names_x_lineup),
-                                        function(i) {
-  !is.na(lineups_merged[[names_x_lineup[i]]]) &
-                                            is.na(lineups_merged[[names_y_lineup[i]]])
-}))
-NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-```
-
-
-
-Column {data-width=1000}
------------------------------------------------------------------------
-### In Old but not New (survey)
-
-```{r}
-shiny::renderTable({
-  surveys_merged |>
-    fsubset(.joyn == "y") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-})
-```
-
-### In New but not Old (survey)
-
-```{r}
-shiny::renderTable({
-  surveys_merged |>
-    fsubset(.joyn == "x") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-})
-```
-
-### NAs in New
-
-```{r}
-shiny::renderTable({
-  NAs_x_survey
-})
-```
-
-
-### NAs in Old
-
-```{r}
-shiny::renderTable({
-  NAs_y_survey
-})
-```
-
-
-Column {data-width=1000}
------------------------------------------------------------------------
-
-### In Old but not New (lineup)
-
-```{r}
-shiny::renderTable({
-  lineups_merged |>
-    fsubset(.joyn == "y") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-})
-```
-
-### In New but not Old (lineup)
-
-```{r}
-shiny::renderTable({
-  lineups_merged |>
-    fsubset(.joyn == "x") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
-})
-```
-
-
-
-
-### NAs in New (lineup)
-
-```{r}
-shiny::renderTable({
-  NAs_x_lineup
-})
-```
-
-
-### NAs in Old (lineup)
-
-```{r}
-shiny::renderTable({
-  NAs_y_lineup
-})
-```
-
-
 
