@@ -137,40 +137,40 @@ lineup_indicators    <- dt_lineup_new |>
   colnames()
 
 
-# Merging OLD and NEW data
-lineups_merged <- joyn::joyn(x             = dt_lineup_new,
-                              y             = dt_lineup_old,
-                              by            = c("country_code",
-                                                "reporting_year",
-                                                "welfare_type",
-                                                "poverty_line",
-                                                "reporting_level"),
-                              match_type    = "1:1",
-                              keep          = "full",
-                              update_values = FALSE,
-                              all           = FALSE,
-                              verbose       = FALSE,
-                              y_vars_to_keep = TRUE,
-                              suffixes = c(".x", ".y"),
-                              keep_common_vars = TRUE)
-# 
-# lineups_merged <- join(x             = dt_lineup_new,
+## Merging OLD and NEW data
+# lineups_merged <- joyn::joyn(x             = dt_lineup_new,
 #                               y             = dt_lineup_old,
-#                               on            = c("country_code",
+#                               by            = c("country_code",
 #                                                 "reporting_year",
 #                                                 "welfare_type",
 #                                                 "poverty_line",
 #                                                 "reporting_level"),
-#                               #match_type    = "1:1",
-#                               how          = "full",
-#                               #update_values = FALSE,
-#                               #all           = FALSE,
+#                               match_type    = "1:1",
+#                               keep          = "full",
+#                               update_values = FALSE,
+#                               all           = FALSE,
 #                               verbose       = FALSE,
-#                               #y_vars_to_keep = TRUE,
-#                               suffix = c(".x", ".y"),
-#                               column = list(".joyn", c("x", "y", "x & y"))
-#                               #keep_common_vars = TRUE
-#                        )
+#                               y_vars_to_keep = TRUE,
+#                               suffixes = c(".x", ".y"),
+#                               keep_common_vars = TRUE)
+# 
+lineups_merged <- join(x             = dt_lineup_new,
+                              y             = dt_lineup_old,
+                              on            = c("country_code",
+                                                "reporting_year",
+                                                "welfare_type",
+                                                "poverty_line",
+                                                "reporting_level"),
+                              #match_type    = "1:1",
+                              how          = "full",
+                              #update_values = FALSE,
+                              #all           = FALSE,
+                              verbose       = FALSE,
+                              #y_vars_to_keep = TRUE,
+                              suffix = c(".x", ".y"),
+                              column = list(".joyn", c("x", "y", "x & y"))
+                              #keep_common_vars = TRUE
+                       )
 
 
 names_x <- paste0(lineup_indicators, ".x")
