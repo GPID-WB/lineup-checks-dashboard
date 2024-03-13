@@ -68,24 +68,11 @@ dt_lineup_old <- dt_lineup_old |>
   frename(reporting_year = year)
 dt_lineup_new <- load_from_repo("lyears.fst")
 
-# dt_agg_old    <- read_fst(path = here::here("data", "use", "dt_agg_old.fst"))
-# dt_agg_new    <- read_fst(path = here::here("data", "use", "dt_agg_new.fst"))
-# dt_survey_old <- read_fst(path = here::here("data", "use", "dt_survey_old.fst"))
-# dt_survey_new <- read_fst(path = here::here("data", "use", "dt_survey_new.fst"))
-# dt_lineup_old <- read_fst(path = here::here("data", "use", "dt_lineup_old.fst"))
-# dt_lineup_new <- read_fst(path = here::here("data", "use", "dt_lineup_new.fst"))
-# 
-# dt_agg_old    <- qDT(dt_agg_old)
-# dt_agg_new    <- qDT(dt_agg_new)
-# dt_survey_old <- qDT(dt_survey_old)
-# dt_survey_new <- qDT(dt_survey_new)
-# dt_lineup_old <- qDT(dt_lineup_old)
-# dt_lineup_new <- qDT(dt_lineup_new)
-
-```
 
 
-```{r survey-data-wrangling}
+
+
+# survey data wrangling -------
 # Indicator names
 survey_indicators    <- dt_survey_new |> 
   fselect(headcount:decile10, spl, spr) |> 
@@ -143,12 +130,7 @@ surveys_merged[,
 surveys_merged[, 
                (paste0(survey_indicators, "_ratio")) := map2(mget(names_x), mget(names_y), `/`)]
 
-
-```
-
-
-
-```{r lineup-data-wrangling}
+# lineup data wrangling --------------
 # Indicator names
 lineup_indicators    <- dt_lineup_new |> 
   fselect(headcount:decile10, spl, spr) |> 
@@ -251,45 +233,22 @@ lineups_merged[,
 
 
 
+# dt_agg_old    <- read_fst(path = here::here("data", "use", "dt_agg_old.fst"))
+# dt_agg_new    <- read_fst(path = here::here("data", "use", "dt_agg_new.fst"))
+# dt_survey_old <- read_fst(path = here::here("data", "use", "dt_survey_old.fst"))
+# dt_survey_new <- read_fst(path = here::here("data", "use", "dt_survey_new.fst"))
+# dt_lineup_old <- read_fst(path = here::here("data", "use", "dt_lineup_old.fst"))
+# dt_lineup_new <- read_fst(path = here::here("data", "use", "dt_lineup_new.fst"))
 # 
-# lineups_merged[,
-#                (paste0(lineup_indicators, "_thresh_low")) := (mean(lineups_merged$new_old, na.rm = TRUE) -
-#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE),
-#                       thres_new_old_hi = mean(lineups_merged$new_old, na.rm = TRUE) +
-#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE))]
-# 
-# 
-# 
-# lineups_merged[,
-#                  `:=`(thres_new_old_lo = mean(lineups_merged$new_old, na.rm = TRUE) -
-#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE),
-#                       thres_new_old_hi = mean(lineups_merged$new_old, na.rm = TRUE) +
-#                           amnt * sd(lineups_merged$new_old, na.rm = TRUE))]
+# dt_agg_old    <- qDT(dt_agg_old)
+# dt_agg_new    <- qDT(dt_agg_new)
+# dt_survey_old <- qDT(dt_survey_old)
+# dt_survey_new <- qDT(dt_survey_new)
+# dt_lineup_old <- qDT(dt_lineup_old)
+# dt_lineup_new <- qDT(dt_lineup_new)
 
-#
-#   if (input$lineup_outlier_yes == "Yes") {
-#       lineup_indicator[,
-#                  new_old_out := !(new_old < thres_new_old_hi &
-#                                     new_old > thres_new_old_lo)]
-#   } else {
-#           lineup_indicator[,
-#                  new_old_out := (new_old < thres_new_old_hi &
-#                                     new_old > thres_new_old_lo)]
-#   }
-#
-#   lineup_indicator <- lineup_indicator[new_old_out == TRUE]
-#
-#   lineup_indicator <- lineup_indicator |>
-#     fmutate(New = get(paste0(ind, ".x"))*100) |>
-#     fmutate(Old = get(paste0(ind, ".y"))*100) |>
-#     fselect("country_code", "reporting_year", "welfare_type", "Old", "New")
-#
-#   setnames(lineup_indicator,
-#            old = c("Old", "New"),
-#            new = c(paste0(c("Old_", "New_"), ind)))
-# 
-#  lineup_indicator
 ```
+
 
 Trends: Old vs New
 ===========================================================
