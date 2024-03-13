@@ -42,6 +42,10 @@ library(shiny)
 source("R/utils.R")
 pl <- 2.15
 
+
+# Make sure to install the followingg version
+# devtools::install_github("worldbank/pipr@DEV")
+
 # Aggregates
 dt_agg_old <- pipr::get_wb(povline = pl) |>
   qDT()
@@ -291,7 +295,7 @@ Trends: Old vs New
 ===========================================================
 
 
-Column {data-width=100}
+Column {.sidebar}
 -----------------------------------------------------------------------
 ```{r sidebar-plot-trends-123}
 # Select Indicator
