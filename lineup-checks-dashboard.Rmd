@@ -723,17 +723,32 @@ lineup_outlier <- reactive({
             Old = get(paste0(lineup_ind(), ".y")),
             new_old =  abs(New - Old) / Old ) 
 
+    lineup_indicator[,
+                 `:=`(
+                   thres_new_old_lo = mean(new_old, na.rm = TRUE) -
+                     input$lineup_outlier * sd(new_old, na.rm = TRUE),
+                   thres_new_old_hi = mean(new_old, na.rm = TRUE) +
+                     input$lineup_outlier * sd(new_old, na.rm = TRUE)
+                 )]
+  
   # Inside or outside threshold
   lineup_indicator <- 
     if (input$lineup_outlier_yes == "Yes") {
-    lineup_indicator[!between(new_old, 
-                              get(paste0(lineup_ind(), "_thresh_low")), 
-                              get(paste0(lineup_ind(), "_thresh_high")))]
+    lineup_indicator[!between(new_old, thres_new_old_lo, thres_new_old_hi)]
   } else {
-        lineup_indicator[between(new_old, 
-                              get(paste0(lineup_ind(), "_thresh_low")), 
-                              get(paste0(lineup_ind(), "_thresh_high")))]
+    lineup_indicator[between(new_old, thres_new_old_lo, thres_new_old_hi)]
   }
+  # Inside or outside threshold
+  # lineup_indicator <- 
+  #   if (input$lineup_outlier_yes == "Yes") {
+  #   lineup_indicator[!between(new_old, 
+  #                             get(paste0(lineup_ind(), "_thresh_low")), 
+  #                             get(paste0(lineup_ind(), "_thresh_high")))]
+  # } else {
+  #       lineup_indicator[between(new_old, 
+  #                             get(paste0(lineup_ind(), "_thresh_low")), 
+  #                             get(paste0(lineup_ind(), "_thresh_high")))]
+  # }
   
   lineup_indicator <- lineup_indicator |>
     fselect("country_code",
