@@ -17,3 +17,25 @@ load_from_repo <- \(filename) {
 
 }
 
+
+
+g_trends <- \(dt, country, indicator) {
+  g <- ggplot(data = dt,
+              aes(x = reporting_year,
+                  label = text)) +
+    geom_line(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
+    geom_point(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
+    geom_line(aes(y = yy, color = "Old")) + #,, color = 'coral') +
+    geom_point(aes(y = yy, color = "Old")) + #,, color = 'coral') +
+    scale_color_manual(values = c("New" = "darkgreen",
+                                  "Old" = "coral")) +
+    theme_classic() +
+    labs(title =
+           paste0("Compare survey trends in indicators of
+                  new and old data for ", country) ,
+         x     = "Reporting Year",
+         y     = stringr::str_to_title(paste0(indicator)))
+
+  # ggplotly(g, tooltip = "text")
+  ggplotly(g, tooltip = c("label"))
+}

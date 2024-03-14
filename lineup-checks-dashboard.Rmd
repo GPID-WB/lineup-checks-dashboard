@@ -213,14 +213,7 @@ selectInput("trend_country",
             multiple = FALSE)
 ```
 
-Column
------------------------------------------------------------------------
-
-### Survey Years
-
-
-    
-```{r}
+```{r trends-reactive}
 ind <- reactive({
   input$trends_indicator
 })
@@ -229,7 +222,7 @@ ct <- reactive({
   input$trend_country
 })
 # reactive table for trends
-TT <- reactive({
+ST <- reactive({
   surveys_merged[country_code == ct()
                  ][, 
                    `:=`(
@@ -245,28 +238,48 @@ TT <- reactive({
                         ] 
 })
 
+LT <- reactive({
+  lineups_merged[country_code == ct()
+                 ][, 
+                   `:=`(
+                       yx = get(paste0(ind(), ".x")),
+                       yy = get(paste0(ind(), ".y"))
+                     ) ][, 
+                         text :=  paste0(
+                        "Economy: ", country_code, "\n",
+                        "Region: ", region_name.x, "\n",
+                        "New Value:", round(yx, 4), "\n",
+                        "Old Value:", round(yy, 4), "\n",
+                        "Year: ", reporting_year)
+                        ] 
+})
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Survey Years
+
+```{r trends-svy}
 renderPlotly({
 
-  g <- ggplot(data = TT(), 
-              aes(x = reporting_year, 
-                  label = text)) +
-    geom_line(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
-    geom_point(aes(y = yx, color = "New")) + #, color = 'darkgreen') +
-    geom_line(aes(y = yy, color = "Old")) + #,, color = 'coral') +
-    geom_point(aes(y = yy, color = "Old")) + #,, color = 'coral') +
-     scale_color_manual(values = c("New" = "darkgreen", 
-                                   "Old" = "coral")) +
-    theme_classic() +
-    labs(title = 
-           paste0("Compare survey trends in indicators of 
-                  new and old data for ", ct()) ,
-         x     = "Reporting Year",
-         y     = stringr::str_to_title(paste0(ind())))
-
-    # ggplotly(g, tooltip = "text")
-    ggplotly(g, tooltip = c("label"))
+  g_trends(dt = ST(), country = ct(), indicator = ind())
 
 })
 ```
+
+Column
+-----------------------------------------------------------------------
+
+### Lineups
+
+```{r trends-lny}
+renderPlotly({
+  
+  g_trends(dt = LT(), country = ct(), indicator = ind())
+  
+})
+```
+
 
 
