@@ -57,7 +57,7 @@ pip2   <- pipapi::pip(country   = ctr,
 fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst" ))
 
 
-pip2_g   <- pipapi::pip_grp(country = ctr,
+pip2_g   <- pipapi::pip_grp_logic(country = ctr,
                             lkup = lkup,
                             povline = pl,
                             group_by = "wb")
