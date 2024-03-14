@@ -490,8 +490,8 @@ renderPlotly({
                   y      = New_minus_old,
                   colour = region_code.x,
                   group  = unique_econ)) +
-          geom_point(aes(text = text_tooltip)) +
-          geom_line() +
+          geom_point(aes(text = text_tooltip), alpha = 0.8) +
+          geom_line(alpha = 0.8) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
     labs(title = "New Vs old",
@@ -521,7 +521,7 @@ renderPlotly({
                   y = get(paste0(svy_ind(), ".x")),
                   color = region_code.x,
                   group = unique_econ)) +
-    geom_point(aes(text = text_tooltip)) +
+    geom_point(aes(text = text_tooltip), alpha = 0.6) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
@@ -546,7 +546,7 @@ renderPlotly({
               aes(x = mean_btw,
                   y = diff,
                   color = region_code.x)) +
-        geom_point(aes(text = text_tooltip)) +
+        geom_point(aes(text = text_tooltip), alpha = 0.6) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
     labs(title = "Bland-Altman Plot",
@@ -785,8 +785,8 @@ renderPlotly({
                   y      = New_minus_old,
                   colour = region_code.x,
                   group  = unique_econ)) +
-          geom_point(aes(text = text_tooltip)) +
-          geom_line() +
+          geom_point(aes(text = text_tooltip), alpha = 0.6) +
+          geom_line(alpha = 0.6) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
     labs(title = "New Vs old",
@@ -816,7 +816,7 @@ renderPlotly({
                   y = get(paste0(lineup_ind(), ".x")),
                   color = region_code.x,
                   group = country_code)) +
-    geom_point(aes(text = text_tooltip)) +
+    geom_point(aes(text = text_tooltip), alpha = 0.6) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
@@ -841,7 +841,7 @@ renderPlotly({
               aes(x = mean_btw,
                   y = diff,
                   color = region_code.x)) +
-        geom_point(aes(text = text_tooltip)) +
+        geom_point(aes(text = text_tooltip), alpha = 0.6) +
     theme_classic() +
     scale_color_brewer(palette = "Dark2") +
     labs(title = "Bland-Altman Plot",
