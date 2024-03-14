@@ -314,14 +314,13 @@ selectInput("survey_percentage",
 
 
 # Select countries
-numericInput(
+sliderInput(
   "survey_outlier",
   label = "Outlier detection - sd threshold",
   value = 2,
   min   = 0,
-  max   = 5,
-  step = 0.1,
-  width = NULL
+  max   = 3.5,
+  step = 0.1
 )
 
 selectInput(
@@ -419,21 +418,25 @@ survey_baltman <- reactive({
 })
 
 survey_outlier <- reactive({
-  # standard dev
-  amnt <- input$survey_outlier
+  
   # Copy data table
   survey_indicator <- copy(surveys_merged)
   
   
   # Define low and high thresholds
-  survey_indicator[, new_old := 
-                   get(paste0(svy_ind(), ".x")) / get(paste0(svy_ind(), ".y"))]
+  survey_indicator <- survey_indicator |> 
+    fmutate(New = get(paste0(svy_ind(), ".x")),
+            Old = get(paste0(svy_ind(), ".y")),
+            new_old =  abs(New - Old) / Old ) 
+    # survey_indicator[, new_old := 
+    #                abs(get(svy_ind(), ".x") - get(svy_ind(), ".y")) /
+    #                  get(svy_ind(), ".y")]
   survey_indicator[,
                  `:=`(
                    thres_new_old_lo = mean(new_old, na.rm = TRUE) -
-                     2 * sd(new_old, na.rm = TRUE),
+                     input$survey_outlier * sd(new_old, na.rm = TRUE),
                    thres_new_old_hi = mean(new_old, na.rm = TRUE) +
-                     2 * sd(new_old, na.rm = TRUE)
+                     input$survey_outlier * sd(new_old, na.rm = TRUE)
                  )]
   
   # Inside or outside threshold
@@ -445,8 +448,6 @@ survey_outlier <- reactive({
   }
   
   survey_indicator <- survey_indicator |>
-    fmutate(New = get(paste0(svy_ind(), ".x")),
-            Old = get(paste0(svy_ind(), ".y"))) |>
     fselect("country_code",
             "reporting_year",
             "welfare_type",
