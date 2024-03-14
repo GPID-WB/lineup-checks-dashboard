@@ -67,8 +67,7 @@ surveys_merged <- join(x       = dt_survey_new,
                        how     = "full",
                        verbose = FALSE,
                        suffix  = c(".x", ".y"),
-                        column = list(".joyn", c("x", "y", "x & y"))
-                       )
+                        column = list(".joyn", c("x", "y", "x & y")))
 
 names_x <- paste0(survey_indicators, ".x")
 names_y <- paste0(survey_indicators, ".y")
@@ -86,7 +85,7 @@ surveys_merged[,
 
 # Groups (reporting_level)
 surveys_merged[, 
-               groupings := paste0(country_code, reporting_level)]
+               unique_econ := paste0(country_code, reporting_level)]
 
 # Line up year -------------
 # Indicator names
@@ -177,10 +176,14 @@ lineups_merged[,
                         }),
                .SDcols = paste0(lineup_indicators, "_ratio")]
 # Groups (reporting_level)
-lineups_merged[, 
-               groupings := paste0(country_code, reporting_level)]
-countries_available <- 
-  surveys_merged$country_code |> 
+lineups_merged[,
+               unique_econ := paste0(country_code, reporting_level)]
+
+countries_available <- surveys_merged$country_code |> 
+  funique()
+un_econ_available <- surveys_merged |> 
+  fmutate(unique_econ = paste0(country_code, "_", reporting_level)) |> 
+  fselect(unique_econ) |> 
   funique()
 ```
 
@@ -227,6 +230,7 @@ ST <- reactive({
                          text :=  paste0(
                         "Economy: ", country_code, "\n",
                         "Region: ", region_name.x, "\n",
+                        "Reporting level: ", reporting_level, "\n",
                         "New Value:", round(yx, 4), "\n",
                         "Old Value:", round(yy, 4), "\n",
                         "Year: ", reporting_year)
@@ -243,6 +247,7 @@ LT <- reactive({
                          text :=  paste0(
                         "Economy: ", country_code, "\n",
                         "Region: ", region_name.x, "\n",
+                        "Reporting level: ", reporting_level, "\n",
                         "New Value:", round(yx, 4), "\n",
                         "Old Value:", round(yy, 4), "\n",
                         "Year: ", reporting_year)
@@ -374,6 +379,7 @@ survey_indicator <- reactive({
                      paste0(
                        "Economy: ", country_code,"\n",
                        "Region: ", region_name.x, "\n",
+                        "Reporting level: ", reporting_level, "\n",
                        "Value: ", round(New_minus_old, 4),"\n",
                        "Year: ", reporting_year
                      )]
@@ -402,6 +408,7 @@ survey_baltman <- reactive({
                      paste0(
                        "Economy: ", country_code,"\n",
                        "Region: ", region_name.x, "\n",
+                       "Reporting level: ", reporting_level, "\n",
                        "Mean old and new: ",round(mean_btw, 4),"\n",
                        "Difference: ",round(diff, 4),"\n",
                        "Year: ",reporting_year
@@ -472,7 +479,7 @@ renderPlotly({
               aes(x      = reporting_year,
                   y      = New_minus_old,
                   colour = region_code.x,
-                  group  = country_code)) +
+                  group  = unique_econ)) +
           geom_point(aes(text = text_tooltip)) +
           geom_line() +
     theme_classic() +
@@ -503,7 +510,7 @@ renderPlotly({
               aes(x = get(paste0(svy_ind(), ".y")),
                   y = get(paste0(svy_ind(), ".x")),
                   color = region_code.x,
-                  group = country_code)) +
+                  group = unique_econ)) +
     geom_point(aes(text = text_tooltip)) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
     theme_classic() +
@@ -658,6 +665,7 @@ lineup_indicator <- reactive({
                      paste0(
                        "Economy: ", country_code,"\n",
                        "Region: ", region_name.x, "\n",
+                       "Reporting level: ", reporting_level, "\n",
                        "Value: ", round(New_minus_old, 4),"\n",
                        "Year: ", reporting_year
                      )]
@@ -686,6 +694,7 @@ lineup_baltman <- reactive({
                      paste0(
                        "Economy: ", country_code,"\n",
                        "Region: ", region_name.x, "\n",
+                       "Reporting level: ", reporting_level, "\n",
                        "Mean old and new: ",round(mean_btw, 4),"\n",
                        "Difference: ",round(diff, 4),"\n",
                        "Year: ",reporting_year
@@ -750,7 +759,7 @@ renderPlotly({
               aes(x      = reporting_year,
                   y      = New_minus_old,
                   colour = region_code.x,
-                  group  = country_code)) +
+                  group  = unique_econ)) +
           geom_point(aes(text = text_tooltip)) +
           geom_line() +
     theme_classic() +
