@@ -8,6 +8,7 @@ output:
     orientation: columns
     social: menu
     vertical_layout: scroll
+    source_code: embed
 runtime: shiny
 ---
 
@@ -82,6 +83,10 @@ surveys_merged[,
 # Ratio
 surveys_merged[,
                (paste0(survey_indicators, "_ratio")) := map2(mget(names_x), mget(names_y), `/`)]
+
+# Groups (reporting_level)
+surveys_merged[, 
+               groupings := paste0(country_code, reporting_level)]
 
 # Line up year -------------
 # Indicator names
@@ -171,7 +176,9 @@ lineups_merged[,
                           mn + amnt * s
                         }),
                .SDcols = paste0(lineup_indicators, "_ratio")]
-
+# Groups (reporting_level)
+lineups_merged[, 
+               groupings := paste0(country_code, reporting_level)]
 countries_available <- 
   surveys_merged$country_code |> 
   funique()
@@ -698,23 +705,17 @@ lineup_outlier <- reactive({
     fmutate(New = get(paste0(lineup_ind(), ".x")),
             Old = get(paste0(lineup_ind(), ".y")),
             new_old =  abs(New - Old) / Old ) 
-    # survey_indicator[, new_old := 
-    #                abs(get(svy_ind(), ".x") - get(svy_ind(), ".y")) /
-    #                  get(svy_ind(), ".y")]
-  lineup_indicator[,
-                 `:=`(
-                   thres_new_old_lo = mean(new_old, na.rm = TRUE) -
-                     input$lineup_outlier * sd(new_old, na.rm = TRUE),
-                   thres_new_old_hi = mean(new_old, na.rm = TRUE) +
-                     input$lineup_outlier * sd(new_old, na.rm = TRUE)
-                 )]
-  
+
   # Inside or outside threshold
   lineup_indicator <- 
     if (input$lineup_outlier_yes == "Yes") {
-    lineup_indicator[!between(new_old, thres_new_old_lo, thres_new_old_hi)]
+    lineup_indicator[!between(new_old, 
+                              get(paste0(lineup_ind(), "_thresh_low")), 
+                              get(paste0(lineup_ind(), "_thresh_high")))]
   } else {
-    lineup_indicator[between(new_old, thres_new_old_lo, thres_new_old_hi)]
+        lineup_indicator[between(new_old, 
+                              get(paste0(lineup_ind(), "_thresh_low")), 
+                              get(paste0(lineup_ind(), "_thresh_high")))]
   }
   
   lineup_indicator <- lineup_indicator |>
@@ -837,6 +838,148 @@ renderTable({
 
 
 
+Compare missing data
+===========================================================
 
+```{r missing-data}
+# SURVEYS-------------------------------------------
+names_x_survey <- paste0(survey_indicators, ".x")
+names_y_survey <- paste0(survey_indicators, ".y")
+
+# Create a logical vector to filter rows
+filter_condition_survey <- Reduce("|",
+                                 lapply(seq_along(names_x_survey),
+                                        function(i) {is.na(surveys_merged[[names_x_survey[i]]]) &
+                                            !is.na(surveys_merged[[names_y_survey[i]]])}))
+
+NAs_x_survey <- surveys_merged[filter_condition_survey,] |>
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+filter_condition_survey <- Reduce("|",
+                                 lapply(seq_along(names_x_survey),
+                                        function(i) {!is.na(surveys_merged[[names_x_survey[i]]]) &
+                                            is.na(surveys_merged[[names_y_survey[i]]])}))
+
+NAs_y_survey <- surveys_merged[filter_condition_survey,]  |>
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type)
+
+# LINEUP-------------------------------------------
+
+names_x_lineup <- paste0(lineup_indicators, ".x")
+names_y_lineup <- paste0(lineup_indicators, ".y")
+
+# Create a logical vector to filter rows
+filter_condition_lineup <- Reduce("|",
+                                 lapply(seq_along(names_x_lineup),
+                                        function(i) {is.na(lineups_merged[[names_x_lineup[i]]]) &
+                                            !is.na(lineups_merged[[names_y_lineup[i]]])}))
+NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |>
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+filter_condition_lineup <- Reduce("|",
+                                 lapply(seq_along(names_x_lineup),
+                                        function(i) {!is.na(lineups_merged[[names_x_lineup[i]]]) &
+                                            is.na(lineups_merged[[names_y_lineup[i]]])}))
+NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |>
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type)
+```
+
+
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+### In Old but not New (survey)
+
+```{r}
+renderTable({
+  surveys_merged |>
+    fsubset(.joyn == "y") |>
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type)
+})
+```
+
+### In New but not Old (survey)
+
+```{r}
+renderTable({
+  surveys_merged |>
+    fsubset(.joyn == "x") |>
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type)
+})
+```
+
+### NAs in New
+
+```{r}
+renderTable({
+  NAs_x_survey
+})
+```
+
+
+### NAs in Old
+
+```{r}
+renderTable({
+  NAs_y_survey
+})
+```
+
+
+Column {data-width=1000}
+-----------------------------------------------------------------------
+
+### In Old but not New (lineup)
+
+```{r}
+renderTable({
+  lineups_merged |>
+    fsubset(.joyn == "y") |>
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level,
+            welfare_type)
+})
+```
+
+### In New but not Old (lineup)
+
+```{r}
+renderTable({
+  lineups_merged |>
+    fsubset(.joyn == "x") |>
+    fselect(country_code, reporting_year, reporting_level, welfare_type)
+})
+```
+
+
+
+
+### NAs in New (lineup)
+
+```{r}
+renderTable({
+  NAs_x_lineup
+})
+```
+
+
+### NAs in Old (lineup)
+
+```{r}
+renderTable({
+  NAs_y_lineup
+})
+```
 
 
