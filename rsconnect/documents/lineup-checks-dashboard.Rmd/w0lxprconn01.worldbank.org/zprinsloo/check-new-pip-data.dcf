@@ -1,0 +1,13 @@
+name: check-new-pip-data
+title: check-new-PIP-data
+username: zprinsloo
+account: zprinsloo
+server: w0lxprconn01.worldbank.org
+hostUrl: http://w0lxprconn01.worldbank.org:3939/__api__
+appId: 1449
+bundleId: 10457
+url: http://w0lxprconn01.worldbank.org:3939/check-new-PIP-data/
+when: 1710431788.12529
+lastSyncTime: 1710431788.1253
+asMultiple: FALSE
+asStatic: FALSE
