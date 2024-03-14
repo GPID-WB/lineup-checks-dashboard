@@ -295,7 +295,7 @@ Column {.sidebar}
 selectInput("survey_indicator",
             label = "Compare indicator:",
             choices = survey_indicators,
-            selected = "headcount")
+            selected = "mean")
 
 # Select countries
 selectInput("survey_country",
@@ -422,46 +422,42 @@ survey_outlier <- reactive({
   # standard dev
   amnt <- input$survey_outlier
   # Copy data table
-  survey_indicator <- surveys_merged
-  ind <- paste(input$survey_indicator)
+  survey_indicator <- copy(surveys_merged)
+  
   
   # Define low and high thresholds
-  surveys_merged[, new_old := get(paste0(ind, ".x")) / get(paste0(ind, ".y"))]
-  surveys_merged[,
+  survey_indicator[, new_old := 
+                   get(paste0(svy_ind(), ".x")) / get(paste0(svy_ind(), ".y"))]
+  survey_indicator[,
                  `:=`(
-                   thres_new_old_lo = mean(surveys_merged$new_old, na.rm = TRUE) -
-                     2 * sd(surveys_merged$new_old, na.rm = TRUE),
-                   thres_new_old_hi = mean(surveys_merged$new_old, na.rm = TRUE) +
-                     2 * sd(surveys_merged$new_old, na.rm = TRUE)
+                   thres_new_old_lo = mean(new_old, na.rm = TRUE) -
+                     2 * sd(new_old, na.rm = TRUE),
+                   thres_new_old_hi = mean(new_old, na.rm = TRUE) +
+                     2 * sd(new_old, na.rm = TRUE)
                  )]
   
   # Inside or outside threshold
-  if (input$survey_outlier_yes == "Yes") {
-    surveys_merged[,
-                   new_old_out := !(new_old < thres_new_old_hi &
-                                      new_old > thres_new_old_lo)]
+  survey_indicator <- 
+    if (input$survey_outlier_yes == "Yes") {
+    survey_indicator[!between(new_old, thres_new_old_lo, thres_new_old_hi)]
   } else {
-    surveys_merged[,
-                   new_old_out := (new_old < thres_new_old_hi &
-                                     new_old > thres_new_old_lo)]
+    survey_indicator[between(new_old, thres_new_old_lo, thres_new_old_hi)]
   }
   
-  surveys_merged <- surveys_merged[new_old_out == TRUE]
-  
-  surveys_merged <- surveys_merged |>
-    fmutate(New = get(paste0(ind, ".x")) * 100) |>
-    fmutate(Old = get(paste0(ind, ".y")) * 100) |>
+  survey_indicator <- survey_indicator |>
+    fmutate(New = get(paste0(svy_ind(), ".x")),
+            Old = get(paste0(svy_ind(), ".y"))) |>
     fselect("country_code",
             "reporting_year",
             "welfare_type",
             "Old",
             "New")
   
-  setnames(surveys_merged,
+  setnames(survey_indicator,
            old = c("Old", "New"),
-           new = c(paste0(c("Old_", "New_"), ind)))
+           new = c(paste0(c("Old_", "New_"), svy_ind())))
   
-  surveys_merged
+  survey_indicator
   
   
 })
