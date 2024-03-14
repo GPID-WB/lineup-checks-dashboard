@@ -85,7 +85,7 @@ surveys_merged[,
 
 # Groups (reporting_level)
 surveys_merged[, 
-               unique_econ := paste0(country_code, reporting_level)]
+               unique_econ := paste0(country_code, reporting_level, welfare_type)]
 
 # Line up year -------------
 # Indicator names
@@ -177,14 +177,20 @@ lineups_merged[,
                .SDcols = paste0(lineup_indicators, "_ratio")]
 # Groups (reporting_level)
 lineups_merged[,
-               unique_econ := paste0(country_code, reporting_level)]
-
+               unique_econ := paste0(country_code, reporting_level, welfare_type)]
+# general objects
 countries_available <- surveys_merged$country_code |> 
   funique()
-un_econ_available <- surveys_merged |> 
-  fmutate(unique_econ = paste0(country_code, "_", reporting_level)) |> 
-  fselect(unique_econ) |> 
+dup_countries <- surveys_merged[, 
+                                .N, 
+                                by = c("country_code", 
+                                       "reporting_year")][N > 1, ]$country_code |> 
   funique()
+
+# un_econ_available <- surveys_merged |> 
+#   fmutate(unique_econ = paste0(country_code, "_", reporting_level, "_", welfare_type)) |> 
+#   fselect(unique_econ) |> 
+#   funique()
 ```
 
 
@@ -231,6 +237,7 @@ ST <- reactive({
                         "Economy: ", country_code, "\n",
                         "Region: ", region_name.x, "\n",
                         "Reporting level: ", reporting_level, "\n",
+                        "Welfare type: ", welfare_type, "\n",
                         "New Value:", round(yx, 4), "\n",
                         "Old Value:", round(yy, 4), "\n",
                         "Year: ", reporting_year)
@@ -248,6 +255,7 @@ LT <- reactive({
                         "Economy: ", country_code, "\n",
                         "Region: ", region_name.x, "\n",
                         "Reporting level: ", reporting_level, "\n",
+                        "Welfare type: ", welfare_type, "\n",
                         "New Value:", round(yx, 4), "\n",
                         "Old Value:", round(yy, 4), "\n",
                         "Year: ", reporting_year)

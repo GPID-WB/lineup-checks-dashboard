@@ -21,7 +21,7 @@ load_from_repo <- \(filename) {
 
 g_trends <- \(dt, country, indicator) {
 
-  if (country %in% c("IND", "CHN", "IDN")) {
+  if (country %in% dup_countries) {
     g <- ggplot(data = dt,
                 aes(x = reporting_year,
                     label = text,
