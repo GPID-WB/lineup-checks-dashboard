@@ -211,7 +211,7 @@ selectInput("trends_indicator",
 
 
 # Select countries
-sliderTextInput("trend_country",
+shinyWidgets::sliderTextInput("trend_country",
             label = "Economies",
             choices = countries_available,
             # selected = "ARE",
