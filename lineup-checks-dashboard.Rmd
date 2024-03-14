@@ -22,6 +22,7 @@ library(purrr)
 library(fst)
 library(fastverse)
 library(shiny)
+library(shinyWidgets)
 
 source("R/utils.R")
 pl <- 2.15
@@ -201,11 +202,12 @@ selectInput("trends_indicator",
 
 
 # Select countries
-selectInput("trend_country",
+sliderTextInput("trend_country",
             label = "Economies",
             choices = countries_available,
-            selected = "ARE",
-            multiple = FALSE)
+            # selected = "ARE",
+            grid = FALSE, 
+            force_edges = TRUE)
 ```
 
 ```{r trends-reactive}
