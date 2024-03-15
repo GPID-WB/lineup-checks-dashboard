@@ -41,6 +41,7 @@ pip2_cl   <- pipapi::pip(country = ctr,
 
 # fst::write_fst(pip1_cl, fs::path(compare_dir,"syears/pip_old", ext = "fst" ))
 fst::write_fst(pip2_cl, fs::path("data","syears", ext = "fst" ))
+haven::write_dta(pip2_cl, fs::path("data","syears", ext = "dta" ))
 
 
 # waldo::compare(pip1, pip2)
@@ -55,6 +56,7 @@ pip2   <- pipapi::pip(country   = ctr,
   setorder(country_code, reporting_year, reporting_level, welfare_type)
 
 fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst" ))
+haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta" ))
 
 
 pip2_g   <- pipapi::pip_grp_logic(country = ctr,
@@ -63,4 +65,5 @@ pip2_g   <- pipapi::pip_grp_logic(country = ctr,
                             group_by = "wb")
 
 fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
+haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta" ))
 
