@@ -68,7 +68,7 @@ fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
 haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta" ))
 
 
-writeLines(as.character(Sys.time()),
+writeLines(format(Sys.time(), "%F %T") ,
            fs::path("data",
                     "data_update_timestamp",
                     ext = "txt"))
