@@ -67,3 +67,10 @@ pip2_g   <- pipapi::pip_grp_logic(country = ctr,
 fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
 haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta" ))
 
+
+writeLines(as.character(Sys.time()),
+           fs::path("data",
+                    "data_update_timestamp",
+                    ext = "txt"))
+
+
