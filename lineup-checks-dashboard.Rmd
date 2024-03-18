@@ -88,6 +88,53 @@ surveys_merged[,
 surveys_merged[, 
                unique_econ := paste0(country_code, reporting_level, welfare_type)]
 
+
+
+
+
+
+
+
+# aggregate data ---------------------
+# Indicator names
+agg_indicators    <- dt_agg_new |>
+  fselect(headcount:spr) |>
+  colnames()
+
+
+# Merging OLD and NEW data
+agg_merged <- join(x       = dt_agg_new,
+                   y       = dt_agg_old,
+                   on      = c("region_code",
+                               "reporting_year"),
+                   how     = "full",
+                   verbose = FALSE,
+                   suffix  = c(".x", ".y"),
+                   column  = list(".joyn", c("x", "y", "x & y")))
+
+names_x <- paste0(agg_indicators, ".x")
+names_y <- paste0(agg_indicators, ".y")
+
+# Calculate the differences and assign them to new columns
+agg_merged[,
+               (paste0(agg_indicators, "_diff")) := map2(mget(names_x), mget(names_y), `-`)]
+# Percentage of old
+agg_merged[,
+               (paste0(agg_indicators, "_perc")) := map2(mget(paste0(agg_indicators, "_diff")),
+                                                            mget(names_y), `/`)]
+# Ratio
+agg_merged[,
+               (paste0(agg_indicators, "_ratio")) := map2(mget(names_x), mget(names_y), `/`)]
+
+# Groups (reporting_level)
+agg_merged[, 
+           unique_econ := paste0(region_code)]
+
+
+
+
+
+
 # Line up year -------------
 # Indicator names
 lineup_indicators    <- dt_lineup_new |>
@@ -182,16 +229,17 @@ lineups_merged[,
 # general objects
 countries_available <- surveys_merged$country_code |> 
   funique()
+regions_available <- agg_merged$region_code |> 
+  funique() |> 
+  na_omit() |> 
+  sort()
 dup_countries <- surveys_merged[, 
                                 .N, 
                                 by = c("country_code", 
                                        "reporting_year")][N > 1, ]$country_code |> 
   funique()
 
-# un_econ_available <- surveys_merged |> 
-#   fmutate(unique_econ = paste0(country_code, "_", reporting_level, "_", welfare_type)) |> 
-#   fselect(unique_econ) |> 
-#   funique()
+
 ```
 
 
@@ -217,6 +265,13 @@ shinyWidgets::sliderTextInput("trend_country",
             # selected = "ARE",
             grid = FALSE, 
             force_edges = TRUE)
+# Select countries
+shinyWidgets::sliderTextInput("trend_region",
+            label = "Economies",
+            choices = regions_available,
+            # selected = "ARE",
+            grid = FALSE, 
+            force_edges = TRUE)
 ```
 
 ```{r trends-reactive}
@@ -226,6 +281,10 @@ ind <- reactive({
 # country 
 ct <- reactive({
   input$trend_country
+})
+# country 
+reg <- reactive({
+  input$trend_region
 })
 # reactive table for trends
 ST <- reactive({
@@ -263,9 +322,25 @@ LT <- reactive({
                         "Year: ", reporting_year)
                         ] 
 })
+
+AT <- reactive({
+  agg_merged[region_code == reg()
+                 ][, 
+                   `:=`(
+                       yx = get(paste0(ind(), ".x")),
+                       yy = get(paste0(ind(), ".y"))
+                     ) ][, 
+                         text :=  paste0(
+                        "Region: ", region_code, "\n",
+                        "New Value:", round(yx, 4), "\n",
+                        "Old Value:", round(yy, 4), "\n",
+                        "Year: ", reporting_year)
+                        ] 
+})
 ```
 
-Column
+
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Survey Years
@@ -278,7 +353,8 @@ renderPlotly({
 })
 ```
 
-Column
+
+Column {.tabset data-width=500} 
 -----------------------------------------------------------------------
 
 ### Lineups
@@ -290,6 +366,19 @@ renderPlotly({
   
 })
 ```
+
+
+### Aggregates
+
+```{r trends-agg}
+renderPlotly({
+
+  g_trends(dt = AT(), country = reg(), indicator = ind())
+
+})
+```
+
+
 
 
 Survey years
@@ -761,7 +850,7 @@ lineup_outlier <- reactive({
   
   setnames(lineup_indicator,
            old = c("Old", "New"),
-           new = c(paste0(c("Old_", "New_"), svy_ind())))
+           new = c(paste0(c("Old_", "New_"), lineup_ind())))
   
   lineup_indicator
   
@@ -872,6 +961,309 @@ renderTable({
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+Aggregates
+===========================================================
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+```{r sidebar-plot-agg-3}
+# Select Indicator
+selectInput("agg_indicator",
+            label = "Compare indicator:",
+            choices = agg_indicators,
+            selected = "mean")
+
+# Select countries
+selectInput("agg_country",
+            label = "Regions:",
+            choices = c("All", regions_available),
+            selected = "All",
+            multiple = TRUE)
+
+
+# Select countries
+selectInput("agg_percentage",
+            label = "Percentage (i.t.o old) or real difference:",
+            choices = c("Percentage change", "Real difference", "Ratio"),
+            selected = "Percentage change",
+            multiple = FALSE)
+
+
+# Select countries
+sliderInput(
+  "agg_outlier",
+  label = "Outlier detection - sd threshold",
+  value = 2,
+  min   = 0,
+  max   = 3.5,
+  step = 0.1
+)
+
+selectInput(
+  "agg_outlier_yes",
+  label = "Is outlier",
+  choices = c("Yes", "No"),
+  selected = "Yes",
+  multiple = FALSE
+)
+
+```
+
+```{r agg-data-reactive}
+agg_ind <- reactive({
+  input$agg_indicator
+})
+
+agg_ct <- reactive({
+  input$agg_country
+})
+
+agg_chg <- reactive({
+  input$agg_percentage
+})
+
+agg_indicator <- reactive({
+
+  # Copy data table
+  agg_indicator <- copy(agg_merged)
+
+  if (!agg_chg() == "Ratio") {
+    if (agg_chg() == "Percentage change") {
+      # indicator
+      setnames(agg_indicator,
+               old = (paste0(agg_ind(), "_perc")),
+               new = "New_minus_old")
+
+    } else {
+      # indicator
+      setnames(agg_indicator,
+               old = (paste0(agg_ind(), "_diff")),
+               new = "New_minus_old")
+    }
+  } else {
+    setnames(agg_indicator,
+             old = (paste0(agg_ind(), "_ratio")),
+             new = "New_minus_old")
+  }
+
+  if (!"All" %chin% agg_ct()) {
+    agg_indicator <- agg_indicator |>
+      fsubset(region_code %in% agg_ct())
+  }
+
+  # Tooltip
+  agg_indicator[,
+                   text_tooltip :=
+                     paste0(
+                       "Region: ", region_code, "\n",
+                       "Value: ", round(New_minus_old, 4),"\n",
+                       "Year: ", reporting_year
+                     )]
+
+  agg_indicator
+
+})
+
+agg_baltman <- reactive({
+
+  # Copy data table
+  agg_indicator <- copy(agg_merged)
+  ind <- paste(input$agg_indicator)
+
+  if (!"All" %chin% input$agg_country) {
+    agg_indicator <- agg_indicator |>
+      fsubset(region_code %in% input$agg_country)
+  }
+  agg_indicator[,
+                   `:=`(diff = get(paste0(ind, ".x")) -
+                          get(paste0(ind, ".y")),
+                        mean_btw = (get(paste0(ind, ".x")) +
+                                      get(paste0(ind, ".y"))) / 2)]
+  # Tooltip
+  agg_indicator[,
+                   text_tooltip :=
+                     paste0(
+                       "Region: ", region_code, "\n",
+                       "Mean old and new: ",round(mean_btw, 4),"\n",
+                       "Difference: ",round(diff, 4),"\n",
+                       "Year: ",reporting_year
+                     )]
+  agg_indicator
+
+})
+
+agg_outlier <- reactive({
+
+  # Copy data table
+  agg_indicator <- copy(agg_merged)
+
+  # Define low and high thresholds
+  agg_indicator <- agg_indicator |>
+    fmutate(New = get(paste0(agg_ind(), ".x")),
+            Old = get(paste0(agg_ind(), ".y")),
+            new_old =  abs(New - Old) / Old )
+
+    agg_indicator[,
+                 `:=`(
+                   thres_new_old_lo = mean(new_old, na.rm = TRUE) -
+                     input$agg_outlier * sd(new_old, na.rm = TRUE),
+                   thres_new_old_hi = mean(new_old, na.rm = TRUE) +
+                     input$agg_outlier * sd(new_old, na.rm = TRUE)
+                 )]
+
+  # Inside or outside threshold
+  agg_indicator <-
+    if (input$agg_outlier_yes == "Yes") {
+    agg_indicator[!between(new_old, thres_new_old_lo, thres_new_old_hi)]
+  } else {
+    agg_indicator[between(new_old, thres_new_old_lo, thres_new_old_hi)]
+  }
+
+
+  agg_indicator <- agg_indicator |>
+    fselect("region_code",
+            "reporting_pop",
+            "Old",
+            "New")
+
+  setnames(agg_indicator,
+           old = c("Old", "New"),
+           new = c(paste0(c("Old_", "New_"), agg_ind())))
+
+  agg_indicator
+
+
+})
+
+```
+
+
+
+
+
+
+
+
+Column {.tabset data-width=600}
+-----------------------------------------------------------------------
+
+### Difference over time
+
+
+```{r plot-agg}
+renderPlotly({
+
+  g <- ggplot(data = agg_indicator(),
+              aes(x      = reporting_year,
+                  y      = New_minus_old,
+                  colour = region_code,
+                  group  = region_code)) +
+          geom_point(aes(text = text_tooltip), alpha = 0.6) +
+          geom_line(alpha = 0.6) +
+    theme_classic() +
+    scale_color_brewer(palette = "Dark2") +
+    labs(title = "New Vs old",
+         x     = "Reporting Year",
+         y     = paste0("Difference in ",
+                        agg_ind(),
+                        ifelse(grepl("[Pp]ercentage", input$agg_percentage),
+                               " %", ""),
+                        " (new minus old)"))
+
+  g <- ggplotly(g, tooltip = "text")
+
+  g
+
+})
+
+```
+
+### Scatterplot of old vs new estimates
+
+```{r}
+renderPlotly({
+
+
+  g <- ggplot(data = agg_indicator(),
+              aes(x = get(paste0(agg_ind(), ".y")),
+                  y = get(paste0(agg_ind(), ".x")),
+                  color = region_code,
+                  group = region_code)) +
+    geom_point(aes(text = text_tooltip), alpha = 0.6) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.3) +
+    theme_classic() +
+    scale_color_brewer(palette = "Dark2") +
+    labs(title = "Scatter plot new survey estimate minus old",
+         x     = paste("Old", agg_ind()),
+         y     = paste("New", agg_ind()))
+
+  g <- ggplotly(g, tooltip = "text")
+
+  g
+})
+```
+
+
+### Bland-Altman plot
+
+```{r}
+renderPlotly({
+
+
+  g <- ggplot(data = agg_baltman(),
+              aes(x = mean_btw,
+                  y = diff,
+                  color = region_code)) +
+        geom_point(aes(text = text_tooltip), alpha = 0.6) +
+    theme_classic() +
+    scale_color_brewer(palette = "Dark2") +
+    labs(title = "Bland-Altman Plot",
+         x     = paste("Mean of old and new", agg_ind()),
+         y     = paste("Difference between old and new", agg_ind()))
+
+  g <- ggplotly(g, tooltip = "text")
+
+  g
+})
+```
+
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Table of outliers
+
+
+```{r}
+renderTable({
+  agg_outlier()
+})
+
+```
+
+
+
+
+
+
+
+
+
 Compare missing data
 ===========================================================
 
@@ -883,15 +1275,15 @@ names_y_survey <- paste0(survey_indicators, ".y")
 # Create a logical vector to filter rows
 filter_condition_survey <- Reduce("|",
                                  lapply(seq_along(names_x_survey),
-                                        function(i) {is.na(surveys_merged[[names_x_survey[i]]]) &
-                                            !is.na(surveys_merged[[names_y_survey[i]]])}))
+                                        function(x) {(is.na(surveys_merged[[names_x_survey[x]]]) | is.nan(surveys_merged[[names_x_survey[x]]])) &
+                                            !(is.na(surveys_merged[[names_y_survey[x]]]) | is.nan(surveys_merged[[names_y_survey[x]]]))}))
 
 NAs_x_survey <- surveys_merged[filter_condition_survey,] |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 filter_condition_survey <- Reduce("|",
                                  lapply(seq_along(names_x_survey),
-                                        function(i) {!is.na(surveys_merged[[names_x_survey[i]]]) &
-                                            is.na(surveys_merged[[names_y_survey[i]]])}))
+                                        function(x) {!(is.na(surveys_merged[[names_x_survey[x]]]) | is.nan(surveys_merged[[names_x_survey[x]]])) &
+                                            (is.na(surveys_merged[[names_y_survey[x]]]) | is.nan(surveys_merged[[names_y_survey[x]]]))}))
 
 NAs_y_survey <- surveys_merged[filter_condition_survey,]  |>
     fselect(country_code, 
@@ -906,27 +1298,52 @@ names_y_lineup <- paste0(lineup_indicators, ".y")
 
 # Create a logical vector to filter rows
 filter_condition_lineup <- Reduce("|",
-                                 lapply(seq_along(names_x_lineup),
-                                        function(i) {is.na(lineups_merged[[names_x_lineup[i]]]) &
-                                            !is.na(lineups_merged[[names_y_lineup[i]]])}))
+                                 lapply(seq_along(names_x_lineup), 
+                                        function(x) {(is.na(lineups_merged[[names_x_lineup[x]]]) |is.nan(lineups_merged[[names_x_lineup[x]]]) ) &
+                                            !(is.na(lineups_merged[[names_y_lineup[x]]]) | is.nan(lineups_merged[[names_y_lineup[x]]])  )}))
 NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |>
     fselect(country_code, reporting_year, reporting_level, welfare_type)
 filter_condition_lineup <- Reduce("|",
                                  lapply(seq_along(names_x_lineup),
-                                        function(i) {!is.na(lineups_merged[[names_x_lineup[i]]]) &
-                                            is.na(lineups_merged[[names_y_lineup[i]]])}))
+                                        function(x) {!(is.na(lineups_merged[[names_x_lineup[x]]]) | is.nan(lineups_merged[[names_x_lineup[x]]]) ) &
+                                            (is.na(lineups_merged[[names_y_lineup[x]]]) | is.nan(lineups_merged[[names_y_lineup[x]]]))}))
 NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |>
     fselect(country_code, 
             reporting_year, 
             reporting_level, 
             welfare_type)
+
+
+
+
+# AGGREGATES-------------------------------------------
+names_x_agg <- paste0(agg_indicators, ".x")
+names_y_agg <- paste0(agg_indicators, ".y")
+
+# Create a logical vector to filter rows
+filter_condition_agg <- Reduce("|",
+                                 lapply(seq_along(names_x_agg),
+                                        function(x) {(is.na(agg_merged[[names_x_agg[x]]]) | is.nan(agg_merged[[names_x_agg[x]]]) ) &
+                                            !(is.na(agg_merged[[names_y_agg[x]]]) | is.nan(agg_merged[[names_y_agg[x]]]))}))
+# 
+NAs_x_agg <- agg_merged[filter_condition_agg,] |>
+    fselect(region_code, reporting_year, reporting_pop)
+
+filter_condition_agg <- Reduce("|",
+                                 lapply(seq_along(names_x_agg),
+                                        function(x) {!(is.na(agg_merged[[names_x_agg[x]]]) | is.nan(agg_merged[[names_x_agg[x]]])) &
+                                            (is.na(agg_merged[[names_y_agg[x]]]) | is.nan(agg_merged[[names_y_agg[x]]]))}))
+
+NAs_y_agg <- agg_merged[filter_condition_agg,]  |>
+    fselect(region_code, reporting_year, reporting_pop)
+
 ```
 
 
 
-Column {data-width=1000}
+Column {.tabset data-width=350}
 -----------------------------------------------------------------------
-### In Old but not New (survey)
+### Survey: Old but not New
 
 ```{r}
 renderTable({
@@ -939,7 +1356,7 @@ renderTable({
 })
 ```
 
-### In New but not Old (survey)
+### New but not Old
 
 ```{r}
 renderTable({
@@ -970,10 +1387,10 @@ renderTable({
 ```
 
 
-Column {data-width=1000}
+Column {.tabset data-width=350}
 -----------------------------------------------------------------------
 
-### In Old but not New (lineup)
+### Lineup: Old but not New
 
 ```{r}
 renderTable({
@@ -986,7 +1403,7 @@ renderTable({
 })
 ```
 
-### In New but not Old (lineup)
+### New but not Old
 
 ```{r}
 renderTable({
@@ -999,7 +1416,7 @@ renderTable({
 
 
 
-### NAs in New (lineup)
+### NAs in New (not NA in old)
 
 ```{r}
 renderTable({
@@ -1008,12 +1425,150 @@ renderTable({
 ```
 
 
-### NAs in Old (lineup)
+### NAs in Old
 
 ```{r}
 renderTable({
   NAs_y_lineup
 })
 ```
+
+
+
+
+Column {.tabset data-width=300}
+-----------------------------------------------------------------------
+### Aggregates: Old but not New
+
+```{r}
+renderTable({
+  agg_merged |>
+    fsubset(.joyn == "y") |>
+    fselect(region_code, 
+            reporting_year, 
+            reporting_pop)
+})
+```
+
+### New but not Old
+
+```{r}
+renderTable({
+  agg_merged |>
+    fsubset(.joyn == "x") |>
+    fselect(region_code, 
+            reporting_year, 
+            reporting_pop)
+})
+```
+
+### NAs in New
+
+```{r}
+renderTable({
+  NAs_x_agg
+})
+```
+
+
+### NAs in Old
+
+```{r}
+renderTable({
+  NAs_y_agg
+})
+```
+
+
+
+
+
+
+
+
+<!-- Compare missing data - Aggregates -->
+<!-- =========================================================== -->
+
+<!-- ```{r missing-data} -->
+<!-- # AGGREGATES------------------------------------------- -->
+<!-- names_x_agg <- paste0(agg_indicators, ".x") -->
+<!-- names_y_agg <- paste0(agg_indicators, ".y") -->
+
+<!-- # Create a logical vector to filter rows -->
+<!-- filter_condition_agg <- Reduce("|", -->
+<!--                                  lapply(seq_along(names_x_agg), -->
+<!--                                         function(i) {is.na(agg_merged[[names_x_agg[i]]]) & -->
+<!--                                             !is.na(agg_merged[[names_y_agg[i]]])})) -->
+
+<!-- NAs_x_agg <- agg_merged[filter_condition_agg,] |> -->
+<!--     fselect(region_code, reporting_year, reporting_pop) -->
+<!-- filter_condition_agg <- Reduce("|", -->
+<!--                                  lapply(seq_along(names_x_agg), -->
+<!--                                         function(i) {!is.na(agg_merged[[names_x_agg[i]]]) & -->
+<!--                                             is.na(surveys_merged[[names_y_agg[i]]])})) -->
+
+<!-- NAs_y_agg <- agg_merged[filter_condition_agg,]  |> -->
+<!--     fselect(region_code, reporting_year, reporting_pop) -->
+
+
+<!-- ``` -->
+
+
+
+<!-- Column {data-width=1000} -->
+<!-- ----------------------------------------------------------------------- -->
+<!-- ### In Old but not New (aggregates) -->
+
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   agg_merged |> -->
+<!--     fsubset(.joyn == "y") |> -->
+<!--     fselect(region_code,  -->
+<!--             reporting_year,  -->
+<!--             reporting_pop) -->
+<!-- }) -->
+<!-- ``` -->
+
+<!-- ### In New but not Old (aggregates) -->
+
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   agg_merged |> -->
+<!--     fsubset(.joyn == "x") |> -->
+<!--     fselect(region_code,  -->
+<!--             reporting_year,  -->
+<!--             reporting_pop) -->
+<!-- }) -->
+<!-- ``` -->
+
+<!-- ### NAs in New -->
+
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   NAs_x_agg -->
+<!-- }) -->
+<!-- ``` -->
+
+
+<!-- ### NAs in Old -->
+
+<!-- ```{r} -->
+<!-- renderTable({ -->
+<!--   NAs_y_agg -->
+<!-- }) -->
+<!-- ``` -->
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
