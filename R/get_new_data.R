@@ -1,4 +1,4 @@
-hours <- 4
+hours <- 0
 minutes <- hours * 60
 seconds <- minutes * 60
 
@@ -40,10 +40,17 @@ lkup <- lkups$versions_paths[[lkups$latest_release]]
 ## survey data -----------
 
 ctr <- "all"
-pl <- 2.15
-pip2_cl   <- pipapi::pip(country = ctr,
-                         lkup    = lkup,
-                         povline = pl)
+pl <- c(2.15, 3.65, 6.85)
+
+pip2_cl   <- lapply(pl, \(.) {
+  pipapi::pip(country = ctr,
+              lkup    = lkup,
+              povline = .)
+}) |>
+  rowbind() |>
+  setorder(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+
+
 
 # fst::write_fst(pip1_cl, fs::path(compare_dir,"syears/pip_old", ext = "fst" ))
 fst::write_fst(pip2_cl, fs::path("data","syears", ext = "fst" ))
@@ -55,20 +62,30 @@ haven::write_dta(pip2_cl, fs::path("data","syears", ext = "dta" ))
 
 ## lineup data ----------
 
-pip2   <- pipapi::pip(country   = ctr,
-                      fill_gaps = TRUE,
-                      lkup      = lkup,
-                      povline   = pl)  |>
-  setorder(country_code, reporting_year, reporting_level, welfare_type)
+pip2   <- lapply(pl, \(.) {
+  pipapi::pip(country   = ctr,
+              fill_gaps = TRUE,
+              lkup      = lkup,
+              povline   = .)
+}) |>
+  rowbind() |>
+  setorder(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+
 
 fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst" ))
 haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta" ))
 
 
-pip2_g   <- pipapi::pip_grp_logic(country = ctr,
-                            lkup = lkup,
-                            povline = pl,
-                            group_by = "wb")
+pip2_g   <- lapply(pl, \(.) {
+  pipapi::pip_grp_logic(country = ctr,
+                        lkup = lkup,
+                        povline = .,
+                        group_by = "wb")
+}) |>
+  rowbind() |>
+  setorder(region_code, reporting_year, poverty_line)
+
+
 
 fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
 haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta" ))
