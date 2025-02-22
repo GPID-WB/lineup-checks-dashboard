@@ -22,6 +22,7 @@ library(fastverse)
 
 # v1 <- "20230919_2017_01_02_PROD"
 ver <- "20240326_2017_01_02_PROD"
+ver <- "20250401_2021_01_02_PROD"
 
 # data_pipeline <-  fs::path("//w1wbgencifs01/pip/pip_ingestion_pipeline/pc_data/output-tfs-sync/ITSES-POVERTYSCORE-DATA")
 
@@ -41,6 +42,7 @@ lkup <- lkups$versions_paths[[lkups$latest_release]]
 
 ctr <- "all"
 pl <- c(2.15, 3.65, 6.85)
+pl <- c(3, 4.2, 8.3) # for 2021 ppp
 
 pip2_cl   <- lapply(pl, \(.) {
   pipapi::pip(country = ctr,
