@@ -27,13 +27,14 @@ library(shinyWidgets)
 source("R/utils.R")
 pl <- 2.15
 
-dt_agg_old <- data.table::rbindlist(
-  list(pipr::get_wb(povline = 2.15) |>
-         qDT(),
-       pipr::get_wb(povline = 3.65) |>
-         qDT(),
-       pipr::get_wb(povline = 6.85) |>
-         qDT()))
+pls <- c(3, 4.2, 8.3)
+
+dt_agg_old <- lapply(pls, \(.) {
+  pipr::get_wb(povline = .) |>
+         qDT()
+  }) |> 
+  rowbind()
+
 # dt_agg_old <- pipr::get_wb(povline = pl) |>
 #   qDT()
 dt_agg_new <- load_from_repo("aggregates.fst")
@@ -43,31 +44,29 @@ dt_agg_old <- dt_agg_old |>
 # Survey years
 # dt_survey_old <- pipr::get_stats(povline = pl) |>
 #   qDT()
-dt_survey_old <- data.table::rbindlist(
-  list(pipr::get_stats(povline = 2.15) |>
-         qDT(),
-       pipr::get_stats(povline = 3.65) |>
-         qDT(),
-       pipr::get_stats(povline = 6.85) |>
-         qDT()))
+
+
+
+dt_survey_old <- lapply(pls, \(.) {
+  pipr::get_stats(povline = .) |>
+         qDT()
+  }) |> 
+  rowbind()
+
+
 dt_survey_new <- load_from_repo("syears.fst")
 dt_survey_old <- dt_survey_old |>
   frename(reporting_year = year)
 
-# aggregates
-# dt_lineup_old <- pipr::get_stats(povline = pl,
-#                                  fill_gaps = TRUE) |>
-#   qDT()
-dt_lineup_old <- data.table::rbindlist(
-  list(pipr::get_stats(povline = 2.15,
-                       fill_gaps = TRUE) |>
-         qDT(),
-       pipr::get_stats(povline = 3.65,
-                       fill_gaps = TRUE) |>
-         qDT(),
-       pipr::get_stats(povline = 6.85,
-                       fill_gaps = TRUE) |>
-         qDT()))
+
+
+dt_lineup_old <- lapply(pls, \(.) {
+  pipr::get_stats(povline = .,
+                  fill_gaps = TRUE) |>
+         qDT()
+  }) |> 
+  rowbind()
+
 dt_lineup_old <- dt_lineup_old |>
   frename(reporting_year = year)
 dt_lineup_new <- load_from_repo("lyears.fst")
