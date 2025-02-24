@@ -1,9 +1,14 @@
-load_from_repo <- \(filename) {
+load_from_repo <- \(filename,
+                    data_branch = c("data2021", "data2017")) {
+
+  data_branch <- match.arg(data_branch)
 
   gh_user   <- "https://raw.githubusercontent.com"
   org_data  <- paste(gh_user,
                      "GPID-WB",
-                     "lineup-checks-dashboard/data/data",
+                     "lineup-checks-dashboard",
+                     data_branch,
+                     "data",
                      filename,
                      sep = "/")
 
@@ -16,6 +21,7 @@ load_from_repo <- \(filename) {
   fst::read_fst(temp_file, as.data.table = TRUE)
 
 }
+
 
 
 

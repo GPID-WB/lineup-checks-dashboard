@@ -14,6 +14,13 @@ runtime: shiny
 
 
 ```{r global, include=FALSE}
+
+# Set branch here
+use_data_branch <- "data2021"
+#use_data_branch <- "data2017"
+
+
+# load packages
 library(flexdashboard)
 library(ggplot2)
 library(RColorBrewer)
@@ -26,9 +33,19 @@ library(shinyWidgets)
 library(pipload)
 
 source("R/utils.R")
-pl <- 2.15
 
-pls <- c(3, 4.2, 8.3)
+if (use_data_branch == "data2021") {
+  pls <- c(3, 
+           4.2, 
+           8.3)
+} else {
+  pls <- c(2.15, 
+           3.65, 
+           6.85)
+}
+#pl <- 2.15
+
+
 
 dt_agg_old <- lapply(pls, \(.) {
   pipr::get_wb(povline = .) |>
@@ -38,7 +55,8 @@ dt_agg_old <- lapply(pls, \(.) {
 
 # dt_agg_old <- pipr::get_wb(povline = pl) |>
 #   qDT()
-dt_agg_new <- load_from_repo("aggregates.fst")
+dt_agg_new <- load_from_repo("aggregates.fst", 
+                             data_branch = use_data_branch)
 dt_agg_old <- dt_agg_old |>
   frename(reporting_year = year)
 
@@ -55,7 +73,8 @@ dt_survey_old <- lapply(pls, \(.) {
   rowbind()
 
 
-dt_survey_new <- load_from_repo("syears.fst")
+dt_survey_new <- load_from_repo("syears.fst", 
+                                data_branch = use_data_branch)
 dt_survey_old <- dt_survey_old |>
   frename(reporting_year = year)
 
@@ -70,7 +89,8 @@ dt_lineup_old <- lapply(pls, \(.) {
 
 dt_lineup_old <- dt_lineup_old |>
   frename(reporting_year = year)
-dt_lineup_new <- load_from_repo("lyears.fst")
+dt_lineup_new <- load_from_repo("lyears.fst", 
+                                data_branch = use_data_branch)
 
 
 # survey data ---------------------
