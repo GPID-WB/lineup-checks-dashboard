@@ -23,6 +23,7 @@ library(fst)
 library(fastverse)
 library(shiny)
 library(shinyWidgets)
+library(pipload)
 
 source("R/utils.R")
 pl <- 2.15
@@ -265,6 +266,9 @@ dup_countries <- surveys_merged[,
                                        "poverty_line")][N > 1, ]$country_code |> 
   funique()
 
+# add pfw data
+pfw <- pip_load_aux("pfw", 
+                    branch = "DEV")
 
 ```
 
@@ -1600,16 +1604,96 @@ renderTable({
 
 
 
+Compare to PFW
+===========================================================
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
 
+```{r sidebar-pfw}
+# Select Indicator
+selectInput("pfw_compare",
+            label = "Check NA indicator:",
+            choices = survey_indicators,
+            selected = "spl")
 
+```
 
 
 
+Column {.tabset data-width=350}
+-----------------------------------------------------------------------
+### Survey: PFW but not New
 
+```{r}
+renderTable({
+  pfw |> 
+  fselect(country_code, 
+          reporting_year, 
+          welfare_type, 
+          survey_coverage) |> 
+  funique() |> 
+  joyn::joyn(
+    y = dt_survey_new |> 
+  fselect(country_code, 
+          reporting_year, 
+          welfare_type, 
+          reporting_level) |> 
+  funique(), 
+  by = c("country_code", 
+         "reporting_year", 
+         "welfare_type", 
+         "survey_coverage = reporting_level")
+  ) |> 
+  fsubset(.joyn == "x") |> 
+    fselect(-.joyn)
+})
+```
 
+### New but not PFW
 
+```{r}
+renderTable({
+  pfw |> 
+  fselect(country_code, 
+          reporting_year, 
+          welfare_type, 
+          survey_coverage) |> 
+  funique() |> 
+  joyn::joyn(
+    y = dt_survey_new |> 
+  fselect(country_code, 
+          reporting_year, 
+          welfare_type, 
+          reporting_level) |> 
+  funique(), 
+  by = c("country_code", 
+         "reporting_year", 
+         "welfare_type", 
+         "survey_coverage = reporting_level")
+  ) |> 
+  fsubset(.joyn == "y") |> 
+    fselect(-.joyn)
+})
+```
 
+### NAs in new data
 
+```{r}
+indpfw <- reactive({
+  input$pfw_compare
+})
+renderTable({
+  
+  dt_survey_new |>
+    fsubset(is.na(get(indpfw()))) |> 
+    fselect(country_code,
+            reporting_year,
+            welfare_type,
+            reporting_level)
+})
+```
 
 
 
@@ -1684,77 +1768,26 @@ renderTable({
 
 
 
-<!-- Compare missing data - Aggregates -->
-<!-- =========================================================== -->
 
-<!-- ```{r missing-data} -->
-<!-- # AGGREGATES------------------------------------------- -->
-<!-- names_x_agg <- paste0(agg_indicators, ".x") -->
-<!-- names_y_agg <- paste0(agg_indicators, ".y") -->
 
-<!-- # Create a logical vector to filter rows -->
-<!-- filter_condition_agg <- Reduce("|", -->
-<!--                                  lapply(seq_along(names_x_agg), -->
-<!--                                         function(i) {is.na(agg_merged[[names_x_agg[i]]]) & -->
-<!--                                             !is.na(agg_merged[[names_y_agg[i]]])})) -->
 
-<!-- NAs_x_agg <- agg_merged[filter_condition_agg,] |> -->
-<!--     fselect(region_code, reporting_year, reporting_pop) -->
-<!-- filter_condition_agg <- Reduce("|", -->
-<!--                                  lapply(seq_along(names_x_agg), -->
-<!--                                         function(i) {!is.na(agg_merged[[names_x_agg[i]]]) & -->
-<!--                                             is.na(surveys_merged[[names_y_agg[i]]])})) -->
 
-<!-- NAs_y_agg <- agg_merged[filter_condition_agg,]  |> -->
-<!--     fselect(region_code, reporting_year, reporting_pop) -->
 
 
-<!-- ``` -->
 
 
 
-<!-- Column {data-width=1000} -->
-<!-- ----------------------------------------------------------------------- -->
-<!-- ### In Old but not New (aggregates) -->
 
-<!-- ```{r} -->
-<!-- renderTable({ -->
-<!--   agg_merged |> -->
-<!--     fsubset(.joyn == "y") |> -->
-<!--     fselect(region_code,  -->
-<!--             reporting_year,  -->
-<!--             reporting_pop) -->
-<!-- }) -->
-<!-- ``` -->
 
-<!-- ### In New but not Old (aggregates) -->
 
-<!-- ```{r} -->
-<!-- renderTable({ -->
-<!--   agg_merged |> -->
-<!--     fsubset(.joyn == "x") |> -->
-<!--     fselect(region_code,  -->
-<!--             reporting_year,  -->
-<!--             reporting_pop) -->
-<!-- }) -->
-<!-- ``` -->
 
-<!-- ### NAs in New -->
 
-<!-- ```{r} -->
-<!-- renderTable({ -->
-<!--   NAs_x_agg -->
-<!-- }) -->
-<!-- ``` -->
 
 
-<!-- ### NAs in Old -->
 
-<!-- ```{r} -->
-<!-- renderTable({ -->
-<!--   NAs_y_agg -->
-<!-- }) -->
-<!-- ``` -->
+
+
+
 
 
 
