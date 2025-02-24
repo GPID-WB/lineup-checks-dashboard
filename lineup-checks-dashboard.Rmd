@@ -248,7 +248,9 @@ lineups_merged[,
                .SDcols = paste0(lineup_indicators, "_ratio")]
 # Groups (reporting_level)
 lineups_merged[,
-               unique_econ := paste0(country_code, reporting_level, welfare_type)]
+               unique_econ := paste0(country_code, 
+                                     reporting_level, 
+                                     welfare_type)]
 # general objects
 countries_available <- surveys_merged$country_code |> 
   funique()
@@ -259,7 +261,8 @@ regions_available <- agg_merged$region_code |>
 dup_countries <- surveys_merged[, 
                                 .N, 
                                 by = c("country_code", 
-                                       "reporting_year")][N > 1, ]$country_code |> 
+                                       "reporting_year", 
+                                       "poverty_line")][N > 1, ]$country_code |> 
   funique()
 
 
@@ -1338,7 +1341,11 @@ filter_condition_survey <- Reduce("|",
                                             !(is.na(surveys_merged[[names_y_survey[x]]]) | is.nan(surveys_merged[[names_y_survey[x]]]))}))
 
 NAs_x_survey <- surveys_merged[filter_condition_survey,] |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type, 
+            poverty_line)
 filter_condition_survey <- Reduce("|",
                                  lapply(seq_along(names_x_survey),
                                         function(x) {!(is.na(surveys_merged[[names_x_survey[x]]]) | is.nan(surveys_merged[[names_x_survey[x]]])) &
@@ -1348,7 +1355,8 @@ NAs_y_survey <- surveys_merged[filter_condition_survey,]  |>
     fselect(country_code,
             reporting_year,
             reporting_level,
-            welfare_type)
+            welfare_type, 
+            poverty_line)
 
 # LINEUP-------------------------------------------
 
@@ -1362,7 +1370,11 @@ filter_condition_lineup <- Reduce("|",
                                         function(x) {(is.na(lineups_merged[[names_x_lineup[x]]]) |is.nan(lineups_merged[[names_x_lineup[x]]]) ) &
                                             !(is.na(lineups_merged[[names_y_lineup[x]]]) | is.nan(lineups_merged[[names_y_lineup[x]]])  )}))
 NAs_x_lineup <- lineups_merged[filter_condition_lineup,] |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level,
+            welfare_type, 
+            poverty_line)
 filter_condition_lineup <- Reduce("|",
                                  lapply(seq_along(names_x_lineup),
                                         function(x) {!(is.na(lineups_merged[[names_x_lineup[x]]]) | is.nan(lineups_merged[[names_x_lineup[x]]]) ) &
@@ -1371,7 +1383,8 @@ NAs_y_lineup <- lineups_merged[filter_condition_lineup,] |>
     fselect(country_code,
             reporting_year,
             reporting_level,
-            welfare_type)
+            welfare_type, 
+            poverty_line)
 
 
 
@@ -1388,7 +1401,10 @@ filter_condition_agg <- Reduce("|",
                                             !(is.na(agg_merged[[names_y_agg[x]]]) | is.nan(agg_merged[[names_y_agg[x]]]))}))
 #
 NAs_x_agg <- agg_merged[filter_condition_agg,] |>
-    fselect(region_code, reporting_year, reporting_pop)
+    fselect(region_code, 
+            reporting_year, 
+            reporting_pop, 
+            poverty_line)
 
 filter_condition_agg <- Reduce("|",
                                  lapply(seq_along(names_x_agg),
@@ -1396,7 +1412,10 @@ filter_condition_agg <- Reduce("|",
                                             (is.na(agg_merged[[names_y_agg[x]]]) | is.nan(agg_merged[[names_y_agg[x]]]))}))
 
 NAs_y_agg <- agg_merged[filter_condition_agg,]  |>
-    fselect(region_code, reporting_year, reporting_pop)
+    fselect(region_code, 
+            reporting_year, 
+            reporting_pop, 
+            poverty_line)
 
 ```
 
@@ -1413,7 +1432,13 @@ renderTable({
     fselect(country_code,
             reporting_year,
             reporting_level,
-            welfare_type)
+            welfare_type, 
+            poverty_line) |> 
+    arrange(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type,
+            poverty_line)
 })
 ```
 
@@ -1426,7 +1451,13 @@ renderTable({
     fselect(country_code,
             reporting_year,
             reporting_level,
-            welfare_type)
+            welfare_type, 
+            poverty_line) |> 
+    arrange(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type,
+            poverty_line)
 })
 ```
 
@@ -1460,7 +1491,13 @@ renderTable({
     fselect(country_code,
             reporting_year,
             reporting_level,
-            welfare_type)
+            welfare_type, 
+            poverty_line) |> 
+    arrange(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type,
+            poverty_line)
 })
 ```
 
@@ -1470,7 +1507,16 @@ renderTable({
 renderTable({
   lineups_merged |>
     fsubset(.joyn == "x") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type)
+    fselect(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type, 
+            poverty_line) |> 
+    arrange(country_code, 
+            reporting_year, 
+            reporting_level, 
+            welfare_type,
+            poverty_line)
 })
 ```
 
@@ -1507,7 +1553,11 @@ renderTable({
     fsubset(.joyn == "y") |>
     fselect(region_code,
             reporting_year,
-            reporting_pop)
+            reporting_pop, 
+            poverty_line) |> 
+    arrange(region_code, 
+            reporting_year, 
+            poverty_line)
 })
 ```
 
@@ -1519,7 +1569,11 @@ renderTable({
     fsubset(.joyn == "x") |>
     fselect(region_code,
             reporting_year,
-            reporting_pop)
+            reporting_pop, 
+            poverty_line) |> 
+    arrange(region_code, 
+            reporting_year, 
+            poverty_line)
 })
 ```
 
