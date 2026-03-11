@@ -23,24 +23,25 @@ library(RColorBrewer)
 
 
 ```{r}
-# aggregates
-dt_agg_old <- fst::read_fst(path = here::here("data", "aggregates", "pip_old.fst"))
-dt_agg_new <- fst::read_fst(path = here::here("data", "aggregates", "pip_new.fst"))
+source("R/utils.R")
+pl <- 2.15
+
+# Aggregates
+dt_agg_old <- pipr::get_wb(povline = pl) |> 
+  qDT()
+dt_agg_new <- load_from_repo("aggregates.fst") 
+
+
+# Survey years
+dt_survey_old <- pipr::get_stats(povline = pl) |> 
+  qDT()
+dt_survey_new <- load_from_repo("syears.fst") 
 
 # aggregates
-dt_survey_old <- fst::read_fst(path = here::here("data", "syears", "pip_old.fst"))
-dt_survey_new <- fst::read_fst(path = here::here("data", "syears", "pip_new.fst"))
-
-# aggregates
-dt_lineup_old <- fst::read_fst(path = here::here("data", "lyears", "pip_old.fst"))
-dt_lineup_new <- fst::read_fst(path = here::here("data", "lyears", "pip_new.fst"))
-
-setDT(dt_agg_old)
-setDT(dt_agg_new)
-setDT(dt_survey_old)
-setDT(dt_survey_new)
-setDT(dt_lineup_old)
-setDT(dt_lineup_new)
+dt_lineup_old <- pipr::get_stats(povline = pl, 
+                                 fill_gaps = TRUE) |> 
+  qDT()
+dt_lineup_new <- load_from_repo("lyears.fst") 
 ```
 
 
