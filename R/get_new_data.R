@@ -85,7 +85,7 @@ haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta"))
 pip2_g <- pip_grp_logic(
   country = ctr,
   lkup = lkup,
-  povline = .,
+  povline = pl,
   group_by = "wb"
 ) |>
   setorder(region_code, reporting_year, poverty_line)
