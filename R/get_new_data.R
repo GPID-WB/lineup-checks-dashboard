@@ -100,6 +100,12 @@ writeLines(
   fs::path("data", "data_update_timestamp", ext = "txt")
 )
 
+# date and time of data update
+timestamp <- paste(
+  "Data updated on:",
+  format(Sys.time(), "%F %T")
+)
+
 ga()
-gca("update")
+gca(timestamp)
 gp()
