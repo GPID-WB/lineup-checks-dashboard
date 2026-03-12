@@ -82,7 +82,7 @@ fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst"))
 haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta"))
 
 
-pip2_g <- pip_grp_logic(
+pip2_g <- pip_agg(
   country = ctr,
   lkup = lkup,
   povline = pl,
