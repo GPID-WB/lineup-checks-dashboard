@@ -41,7 +41,8 @@ lineup_indicators <- all_data[["2021"]]$lineup_indicators
 
 # Defaults for initial UI rendering
 .default_povlines <- all_data[["2021"]]$surveys_merged$poverty_line |>
-  funique() |> sort()
+  funique() |>
+  sort()
 .default_countries <- all_data[["2021"]]$countries_available
 .default_regions <- all_data[["2021"]]$regions_available
 
@@ -103,11 +104,21 @@ shinyWidgets::sliderTextInput(
 
 ```{r trends-reactive}
 # Core data reactives
-ppp <- reactive({ input$ppp_version })
-surveys_m <- reactive({ all_data[[ppp()]]$surveys_merged })
-agg_m <- reactive({ all_data[[ppp()]]$agg_merged })
-lineups_m <- reactive({ all_data[[ppp()]]$lineups_merged })
-survey_new <- reactive({ all_data[[ppp()]]$dt_survey_new })
+ppp <- reactive({
+  req(input$ppp_version)
+})
+surveys_m <- reactive({
+  all_data[[ppp()]]$surveys_merged
+})
+agg_m <- reactive({
+  all_data[[ppp()]]$agg_merged
+})
+lineups_m <- reactive({
+  all_data[[ppp()]]$lineups_merged
+})
+survey_new <- reactive({
+  all_data[[ppp()]]$dt_survey_new
+})
 
 # Update sidebar choices when PPP version changes
 observe({
@@ -1301,15 +1312,21 @@ find_na_rows <- function(dt, indicators, direction = "x_na") {
   names_x <- paste0(indicators, ".x")
   names_y <- paste0(indicators, ".y")
   if (direction == "x_na") {
-    cond <- Reduce("|", lapply(seq_along(names_x), function(i) {
-      (is.na(dt[[names_x[i]]]) | is.nan(dt[[names_x[i]]])) &
-        !(is.na(dt[[names_y[i]]]) | is.nan(dt[[names_y[i]]]))
-    }))
+    cond <- Reduce(
+      "|",
+      lapply(seq_along(names_x), function(i) {
+        (is.na(dt[[names_x[i]]]) | is.nan(dt[[names_x[i]]])) &
+          !(is.na(dt[[names_y[i]]]) | is.nan(dt[[names_y[i]]]))
+      })
+    )
   } else {
-    cond <- Reduce("|", lapply(seq_along(names_x), function(i) {
-      !(is.na(dt[[names_x[i]]]) | is.nan(dt[[names_x[i]]])) &
-        (is.na(dt[[names_y[i]]]) | is.nan(dt[[names_y[i]]]))
-    }))
+    cond <- Reduce(
+      "|",
+      lapply(seq_along(names_x), function(i) {
+        !(is.na(dt[[names_x[i]]]) | is.nan(dt[[names_x[i]]])) &
+          (is.na(dt[[names_y[i]]]) | is.nan(dt[[names_y[i]]]))
+      })
+    )
   }
   dt[cond, ]
 }
@@ -1317,21 +1334,45 @@ find_na_rows <- function(dt, indicators, direction = "x_na") {
 # SURVEYS
 NAs_x_survey <- reactive({
   find_na_rows(surveys_m(), survey_indicators, "x_na") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+    fselect(
+      country_code,
+      reporting_year,
+      reporting_level,
+      welfare_type,
+      poverty_line
+    )
 })
 NAs_y_survey <- reactive({
   find_na_rows(surveys_m(), survey_indicators, "y_na") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+    fselect(
+      country_code,
+      reporting_year,
+      reporting_level,
+      welfare_type,
+      poverty_line
+    )
 })
 
 # LINEUP
 NAs_x_lineup <- reactive({
   find_na_rows(lineups_m(), lineup_indicators, "x_na") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+    fselect(
+      country_code,
+      reporting_year,
+      reporting_level,
+      welfare_type,
+      poverty_line
+    )
 })
 NAs_y_lineup <- reactive({
   find_na_rows(lineups_m(), lineup_indicators, "y_na") |>
-    fselect(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+    fselect(
+      country_code,
+      reporting_year,
+      reporting_level,
+      welfare_type,
+      poverty_line
+    )
 })
 
 # AGGREGATES
