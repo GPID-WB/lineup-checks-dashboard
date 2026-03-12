@@ -1,13 +1,19 @@
-load_from_repo <- \(filename, data_branch = c("data2021", "data2017")) {
-  data_branch <- match.arg(data_branch)
+load_from_repo <- \(
+  filename,
+  ppp_year = c("2021", "2017"),
+  data_branch = "main"
+) {
+  ppp_year <- as.character(ppp_year)
+  ppp_year <- match.arg(ppp_year)
 
   gh_user <- "https://raw.githubusercontent.com"
   org_data <- paste(
     gh_user,
     "GPID-WB",
-    "lineup-checks-dashboard",
+    "pip-sandbox",
     data_branch,
     "data",
+    ppp_year,
     filename,
     sep = "/"
   )

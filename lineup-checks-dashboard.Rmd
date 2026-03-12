@@ -16,8 +16,8 @@ runtime: shiny
 ```{r global, include=FALSE}
 
 # Set branch here
-use_data_branch <- "data2021"
-#use_data_branch <- "data2017"
+ppp_year <- "2021"
+#ppp_year <- "data2017"
 
 
 # load packages
@@ -34,7 +34,7 @@ library(pipload)
 
 source("R/utils.R")
 
-if (use_data_branch == "data2021") {
+if (as.character(ppp_year) == "2021") {
   pls <- c(3, 
            4.2, 
            8.3)
@@ -51,32 +51,30 @@ dt_agg_old <- lapply(pls, \(.) {
   pipr::get_wb(povline = .) |>
          qDT()
   }) |> 
-  rowbind()
+  rowbind() |> 
+  setnames("year", "reporting_year")
 
 # dt_agg_old <- pipr::get_wb(povline = pl) |>
 #   qDT()
 dt_agg_new <- load_from_repo("aggregates.fst", 
-                             data_branch = use_data_branch)
-dt_agg_old <- dt_agg_old |>
-  frename(reporting_year = year)
+                             ppp_year = ppp_year)
+                             
 
 # Survey years
 # dt_survey_old <- pipr::get_stats(povline = pl) |>
 #   qDT()
 
 
-
 dt_survey_old <- lapply(pls, \(.) {
   pipr::get_stats(povline = .) |>
          qDT()
   }) |> 
-  rowbind()
+  rowbind() |>
+  setnames("year", "reporting_year")
 
 
 dt_survey_new <- load_from_repo("syears.fst", 
-                                data_branch = use_data_branch)
-dt_survey_old <- dt_survey_old |>
-  frename(reporting_year = year)
+                                ppp_year = ppp_year)
 
 
 
@@ -85,12 +83,12 @@ dt_lineup_old <- lapply(pls, \(.) {
                   fill_gaps = TRUE) |>
          qDT()
   }) |> 
-  rowbind()
+  rowbind() |> 
+  setnames("year", "reporting_year")
 
-dt_lineup_old <- dt_lineup_old |>
-  frename(reporting_year = year)
+
 dt_lineup_new <- load_from_repo("lyears.fst", 
-                                data_branch = use_data_branch)
+                                ppp_year = ppp_year)
 
 
 # survey data ---------------------
