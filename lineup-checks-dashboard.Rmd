@@ -1225,6 +1225,7 @@ agg_outlier <- reactive({
 
   agg_indicator <- agg_indicator |>
     fselect("region_code",
+            "reporting_year",
             "reporting_pop",
             "Old",
             "New")
