@@ -6,10 +6,12 @@ Sys.sleep(seconds)
 
 
 library(fastverse)
-
+library(pipapi)
+options(pipapi.query_live_data = TRUE)
+getOption("pipapi.query_live_data")
 # pak::pak("PIP-technical-team/pipapi@DEV")
 # pak::pak("PIP-technical-team/wbpip@DEV")
-# pak::pak("PIP-technical-team/pipapi@PROD")
+# remotes::install_github("PIP-technical-team/pipapi@new-test-suite")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                   Subfunctions   ---------
@@ -19,14 +21,12 @@ library(fastverse)
 #                   Set up   ---------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 # v1 <- "20230919_2017_01_02_PROD"
-ver <- "20240326_2017_01_02_PROD"
-ver <- "20250401_2021_01_02_PROD"
+ver <- "20260324_2021_01_02_PROD"
 
 # data_pipeline <-  fs::path("//w1wbgencifs01/pip/pip_ingestion_pipeline/pc_data/output-tfs-sync/ITSES-POVERTYSCORE-DATA")
 
-data_pipeline <-  fs::path("e:/PIP/pipapi_data/")
+data_pipeline <- fs::path("e:/PIP/pipapi_data/")
 
 lkups <- pipapi::create_versioned_lkups(
   data_pipeline,
@@ -44,61 +44,68 @@ ctr <- "all"
 pl <- c(2.15, 3.65, 6.85)
 pl <- c(3, 4.2, 8.3) # for 2021 ppp
 
-pip2_cl   <- lapply(pl, \(.) {
-  pipapi::pip(country = ctr,
-              lkup    = lkup,
-              povline = .)
-}) |>
-  rowbind() |>
-  setorder(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
-
+pip2_cl <-
+  pip(country = ctr, lkup = lkup, povline = pl) |>
+  setorder(
+    country_code,
+    reporting_year,
+    reporting_level,
+    welfare_type,
+    poverty_line
+  )
 
 
 # fst::write_fst(pip1_cl, fs::path(compare_dir,"syears/pip_old", ext = "fst" ))
-fst::write_fst(pip2_cl, fs::path("data","syears", ext = "fst" ))
-haven::write_dta(pip2_cl, fs::path("data","syears", ext = "dta" ))
+fst::write_fst(pip2_cl, fs::path("data", "syears", ext = "fst"))
+haven::write_dta(pip2_cl, fs::path("data", "syears", ext = "dta"))
 
 
 # waldo::compare(pip1, pip2)
 
-
 ## lineup data ----------
+pip2 <- pip(
+  country = ctr,
+  fill_gaps = TRUE,
+  lkup = lkup,
+  povline = pl
+) |>
+  setorder(
+    country_code,
+    reporting_year,
+    reporting_level,
+    welfare_type,
+    poverty_line
+  )
 
-pip2   <- lapply(pl, \(.) {
-  pipapi::pip(country   = ctr,
-              fill_gaps = TRUE,
-              lkup      = lkup,
-              povline   = .)
-}) |>
-  rowbind() |>
-  setorder(country_code, reporting_year, reporting_level, welfare_type, poverty_line)
+
+fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst"))
+haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta"))
 
 
-fst::write_fst(pip2, fs::path("data", "lyears", ext = "fst" ))
-haven::write_dta(pip2, fs::path("data", "lyears", ext = "dta" ))
-
-
-pip2_g   <- lapply(pl, \(.) {
-  pipapi::pip_grp_logic(country = ctr,
-                        lkup = lkup,
-                        povline = .,
-                        group_by = "wb")
-}) |>
-  rowbind() |>
+pip2_g <- pip_agg(
+  country = ctr,
+  lkup = lkup,
+  povline = pl,
+  group_by = "wb"
+) |>
   setorder(region_code, reporting_year, poverty_line)
 
 
+fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst"))
+haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta"))
 
-fst::write_fst(pip2_g, fs::path("data", "aggregates", ext = "fst" ))
-haven::write_dta(pip2_g, fs::path("data", "aggregates", ext = "dta" ))
 
+writeLines(
+  format(Sys.time(), "%F %T"),
+  fs::path("data", "data_update_timestamp", ext = "txt")
+)
 
-writeLines(format(Sys.time(), "%F %T") ,
-           fs::path("data", "data_update_timestamp", ext = "txt"))
+# date and time of data update
+timestamp <- paste(
+  "Data updated on:",
+  format(Sys.time(), "%F %T")
+)
 
 ga()
-gca("update")
+gca(timestamp)
 gp()
-
-
-

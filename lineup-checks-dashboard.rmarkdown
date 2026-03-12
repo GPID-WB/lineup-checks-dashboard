@@ -16,8 +16,8 @@ runtime: shiny
 ```{r global, include=FALSE}
 
 # Set branch here
-ppp_year <- "2021"
-#ppp_year <- "data2017"
+use_data_branch <- "data2021"
+#use_data_branch <- "data2017"
 
 
 # load packages
@@ -34,7 +34,7 @@ library(pipload)
 
 source("R/utils.R")
 
-if (as.character(ppp_year) == "2021") {
+if (use_data_branch == "data2021") {
   pls <- c(3, 
            4.2, 
            8.3)
@@ -48,33 +48,35 @@ if (as.character(ppp_year) == "2021") {
 
 
 dt_agg_old <- lapply(pls, \(.) {
-  pipr::get_wb(povline = ., ) |>
+  pipr::get_wb(povline = .) |>
          qDT()
   }) |> 
-  rowbind() |> 
-  setnames("year", "reporting_year")
+  rowbind()
 
 # dt_agg_old <- pipr::get_wb(povline = pl) |>
 #   qDT()
 dt_agg_new <- load_from_repo("aggregates.fst", 
-                             ppp_year = ppp_year)
-                             
+                             data_branch = use_data_branch)
+dt_agg_old <- dt_agg_old |>
+  frename(reporting_year = year)
 
 # Survey years
 # dt_survey_old <- pipr::get_stats(povline = pl) |>
 #   qDT()
 
 
+
 dt_survey_old <- lapply(pls, \(.) {
   pipr::get_stats(povline = .) |>
          qDT()
   }) |> 
-  rowbind() |>
-  setnames("year", "reporting_year")
+  rowbind()
 
 
 dt_survey_new <- load_from_repo("syears.fst", 
-                                ppp_year = ppp_year)
+                                data_branch = use_data_branch)
+dt_survey_old <- dt_survey_old |>
+  frename(reporting_year = year)
 
 
 
@@ -83,12 +85,12 @@ dt_lineup_old <- lapply(pls, \(.) {
                   fill_gaps = TRUE) |>
          qDT()
   }) |> 
-  rowbind() |> 
-  setnames("year", "reporting_year")
+  rowbind()
 
-
+dt_lineup_old <- dt_lineup_old |>
+  frename(reporting_year = year)
 dt_lineup_new <- load_from_repo("lyears.fst", 
-                                ppp_year = ppp_year)
+                                data_branch = use_data_branch)
 
 
 # survey data ---------------------
@@ -1223,7 +1225,6 @@ agg_outlier <- reactive({
 
   agg_indicator <- agg_indicator |>
     fselect("region_code",
-            "reporting_year",
             "reporting_pop",
             "Old",
             "New")
@@ -1713,6 +1714,7 @@ renderTable({
             reporting_level)
 })
 ```
+
 
 
 
