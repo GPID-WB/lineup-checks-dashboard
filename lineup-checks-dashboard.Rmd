@@ -48,7 +48,7 @@ if (as.character(ppp_year) == "2021") {
 
 
 dt_agg_old <- lapply(pls, \(.) {
-  pipr::get_wb(povline = .) |>
+  pipr::get_wb(povline = ., ) |>
          qDT()
   }) |> 
   rowbind() |> 
