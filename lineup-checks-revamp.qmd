@@ -14,6 +14,8 @@ library(DT)
 library(plotly)
 library(bslib)
 library(bsicons)
+library(shinycssloaders)
+library(shinyWidgets)
 
 # Load source scripts
 source(here::here("R", "process_data.R"))
@@ -338,7 +340,8 @@ build_plotly_heatmap <- function(
   y_col,
   z_col,
   title,
-  method_label = ""
+  method_label = "",
+  sig_values = NULL
 ) {
   if (nrow(dt) == 0L) {
     return(
@@ -358,6 +361,13 @@ build_plotly_heatmap <- function(
         )
     )
   }
+
+  sig_text <- if (!is.null(sig_values)) {
+    paste0("<br>", method_label, ": ", round(sig_values, 4))
+  } else {
+    ""
+  }
+
   plotly::plot_ly(
     data = dt,
     x = dt[[x_col]],
@@ -376,6 +386,7 @@ build_plotly_heatmap <- function(
       dt[[x_col]],
       "<br>Diff: ",
       round(dt[[z_col]], 4),
+      sig_text,
       "<br>Method: ",
       method_label
     )
@@ -386,6 +397,30 @@ build_plotly_heatmap <- function(
       yaxis = list(title = y_col, type = "category"),
       margin = list(l = 100)
     )
+}
+
+# Helper: compute the significance metric value for each observation
+# Returns the actual value used by the significance method (relative %, z-score, or abs diff)
+compute_sig_value <- function(new_val, old_val, method, epsilon = 1e-9) {
+  diffs <- new_val - old_val
+  switch(
+    method,
+    "relative" = {
+      abs(diffs) / pmax(abs(old_val), epsilon) * 100
+    },
+    "zscore" = {
+      qs <- quantile(diffs, c(0.01, 0.99), na.rm = TRUE)
+      trimmed <- diffs[diffs >= qs[[1L]] & diffs <= qs[[2L]]]
+      mu <- mean(trimmed, na.rm = TRUE)
+      sg <- sd(trimmed, na.rm = TRUE)
+      if (is.na(sg) || sg < sqrt(.Machine$double.eps)) {
+        rep(0, length(diffs))
+      } else {
+        (diffs - mu) / sg
+      }
+    },
+    "absolute" = abs(diffs)
+  )
 }
 
 # Aggregates Heatmap (flagged only)
@@ -403,13 +438,25 @@ output$heatmap_agg <- plotly::renderPlotly({
   )
   dt_flagged <- dt[flagged == TRUE]
   diff_col <- paste0(input$indicator, "_diff")
+  new_col <- paste0(input$indicator, "_new")
+  old_col <- paste0(input$indicator, "_old")
+  sig_vals <- if (nrow(dt_flagged) > 0L) {
+    compute_sig_value(
+      dt_flagged[[new_col]],
+      dt_flagged[[old_col]],
+      input$method
+    )
+  } else {
+    NULL
+  }
   build_plotly_heatmap(
     dt_flagged,
     x_col = "reporting_year",
     y_col = "region_code",
     z_col = diff_col,
     title = paste0("Aggregates — Flagged ", input$indicator, " Changes"),
-    method_label = method_label()
+    method_label = method_label(),
+    sig_values = sig_vals
   )
 })
 
@@ -431,15 +478,26 @@ output$heatmap_lineup <- plotly::renderPlotly({
   flag_col <- paste0(input$indicator, "_flagged")
   diff_col <- paste0(input$indicator, "_diff")
 
+  ind_x <- paste0(input$indicator, ".x")
+  ind_y <- paste0(input$indicator, ".y")
+
   dt_flagged <- flagged[
     get(flag_col) == TRUE,
     .(
       country_code,
       region_code = region_code.x,
       reporting_year,
-      diff = get(diff_col)
+      diff = get(diff_col),
+      new_val = get(ind_x),
+      old_val = get(ind_y)
     )
   ]
+
+  sig_vals <- if (nrow(dt_flagged) > 0L) {
+    compute_sig_value(dt_flagged$new_val, dt_flagged$old_val, input$method)
+  } else {
+    NULL
+  }
 
   build_plotly_heatmap(
     dt_flagged,
@@ -447,7 +505,8 @@ output$heatmap_lineup <- plotly::renderPlotly({
     y_col = "country_code",
     z_col = "diff",
     title = paste0("Lineups — Flagged ", input$indicator, " Changes"),
-    method_label = method_label()
+    method_label = method_label(),
+    sig_values = sig_vals
   )
 })
 
@@ -469,14 +528,25 @@ output$heatmap_survey <- plotly::renderPlotly({
   flag_col <- paste0(input$indicator, "_flagged")
   diff_col <- paste0(input$indicator, "_diff")
 
+  ind_x <- paste0(input$indicator, ".x")
+  ind_y <- paste0(input$indicator, ".y")
+
   dt_flagged <- flagged[
     get(flag_col) == TRUE,
     .(
       country_code,
       reporting_year,
-      diff = get(diff_col)
+      diff = get(diff_col),
+      new_val = get(ind_x),
+      old_val = get(ind_y)
     )
   ]
+
+  sig_vals <- if (nrow(dt_flagged) > 0L) {
+    compute_sig_value(dt_flagged$new_val, dt_flagged$old_val, input$method)
+  } else {
+    NULL
+  }
 
   build_plotly_heatmap(
     dt_flagged,
@@ -484,7 +554,8 @@ output$heatmap_survey <- plotly::renderPlotly({
     y_col = "country_code",
     z_col = "diff",
     title = paste0("Surveys — Flagged ", input$indicator, " Changes"),
-    method_label = method_label()
+    method_label = method_label(),
+    sig_values = sig_vals
   )
 })
 
@@ -535,7 +606,7 @@ output$tbl_flagged_lineups <- DT::renderDT({
         NULL,
         NULL,
         NULL,
-        list(search = "true")
+        list(search = '["true"]')
       )
     )
   )
@@ -637,7 +708,7 @@ output$tbl_flagged_surveys <- DT::renderDT({
         NULL,
         NULL,
         NULL,
-        list(search = "true")
+        list(search = '["true"]')
       )
     )
   )
@@ -741,11 +812,6 @@ output$tbl_driver <- DT::renderDT({
     ]
   }
 
-  name_col <- if ("country_name.x" %in% names(lm_sub)) {
-    "country_name.x"
-  } else {
-    "country_name"
-  }
   ind_x <- paste0(input$indicator, ".x")
   ind_y <- paste0(input$indicator, ".y")
   ind_diff <- paste0(input$indicator, "_diff")
@@ -754,7 +820,6 @@ output$tbl_driver <- DT::renderDT({
     !is.na(country_code),
     .(
       country_code,
-      country_name = get(name_col),
       reporting_year,
       new_val = get(ind_x),
       old_val = get(ind_y),
@@ -792,6 +857,19 @@ output$tbl_driver <- DT::renderDT({
     )
   )
   dt <- dt[order(-abs(weighted_contribution))]
+
+  # Remove columns where old indicator is entirely NA
+  old_col <- paste0(input$indicator, "_old")
+  if (all(is.na(dt[[old_col]]))) {
+    cols_to_remove <- c(
+      old_col,
+      paste0(input$indicator, "_diff"),
+      "weighted_contribution",
+      "pop_weight"
+    )
+    cols_to_remove <- intersect(cols_to_remove, names(dt))
+    dt[, (cols_to_remove) := NULL]
+  }
 
   DT::datatable(
     dt,
@@ -1044,6 +1122,224 @@ output$tbl_coverage <- shiny::renderTable(
   spacing = "xs",
   width = "100%"
 )
+
+# Country: Auxiliary Indicator Trend Chart (plotly)
+output$plot_country_aux <- plotly::renderPlotly({
+  shiny::req(
+    input$country_filter,
+    input$aux_indicator,
+    input$year_range_country
+  )
+  data <- merged_data()
+  .pl <- as.numeric(input$poverty_line)
+  .aux <- input$aux_indicator
+
+  # Map short names to column names
+  aux_map <- c(
+    "pce" = "reporting_pce",
+    "gdp" = "reporting_gdp",
+    "pop" = "reporting_pop",
+    "cpi" = "cpi"
+  )
+  aux_col <- aux_map[.aux]
+  col_new <- paste0(aux_col, ".x")
+  col_old <- paste0(aux_col, ".y")
+
+  lineup_data <- data$lineups_merged[
+    country_code == input$country_filter &
+      poverty_line == .pl &
+      reporting_year >= input$year_range_country[1] &
+      reporting_year <= input$year_range_country[2]
+  ]
+
+  # Deduplicate by reporting_year (take first row per year)
+  lineup_data <- lineup_data[
+    !duplicated(reporting_year),
+    .SD,
+    .SDcols = c("reporting_year", col_new, col_old)
+  ]
+
+  if (
+    nrow(lineup_data) == 0 ||
+      !col_new %in% names(lineup_data) ||
+      !col_old %in% names(lineup_data)
+  ) {
+    return(
+      plotly::plot_ly() |>
+        plotly::layout(
+          annotations = list(list(
+            text = "No data available",
+            x = 0.5,
+            y = 0.5,
+            showarrow = FALSE,
+            xref = "paper",
+            yref = "paper"
+          ))
+        )
+    )
+  }
+
+  plot_data <- data.table(
+    reporting_year = rep(lineup_data$reporting_year, 2L),
+    value = c(lineup_data[[col_new]], lineup_data[[col_old]]),
+    version = rep(c("New", "Old"), each = nrow(lineup_data))
+  )
+
+  p <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = reporting_year,
+      y = value,
+      color = version,
+      linetype = version
+    )
+  ) +
+    ggplot2::geom_line(linewidth = 1) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::scale_color_manual(
+      values = c("New" = "#2E86AB", "Old" = "#A23B72")
+    ) +
+    ggplot2::scale_linetype_manual(
+      values = c("New" = "solid", "Old" = "dashed")
+    ) +
+    ggplot2::labs(
+      title = paste0(toupper(.aux), " \u2014 ", input$country_filter),
+      x = "Year",
+      y = toupper(.aux),
+      color = "Version",
+      linetype = "Version"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "top")
+
+  plotly::ggplotly(p, tooltip = c("x", "y"))
+})
+
+# --- Country Table tab ---
+
+# Country table selector UI
+output$country_selector_tbl_ui <- shiny::renderUI({
+  shiny::selectInput(
+    "country_filter_tbl",
+    label = "Country:",
+    choices = country_choices(),
+    selected = country_choices()[1]
+  )
+})
+
+# Country table year range UI
+output$year_range_tbl_ui <- shiny::renderUI({
+  bounds <- year_range_bounds()
+  shiny::sliderInput(
+    "year_range_tbl",
+    label = "Year Range:",
+    min = bounds$min,
+    max = bounds$max,
+    value = c(bounds$min, bounds$max),
+    step = 1L
+  )
+})
+
+# Country Table: combined survey + source table with reordered columns
+output$tbl_country_combined <- DT::renderDT({
+  shiny::req(
+    input$poverty_line,
+    input$country_filter_tbl,
+    input$year_range_tbl
+  )
+  data <- merged_data()
+  .pl <- as.numeric(input$poverty_line)
+
+  lineup_data <- data$lineups_merged[
+    country_code == input$country_filter_tbl &
+      poverty_line == .pl &
+      reporting_year >= input$year_range_tbl[1] &
+      reporting_year <= input$year_range_tbl[2]
+  ]
+
+  if (nrow(lineup_data) == 0) {
+    return(
+      DT::datatable(
+        data.frame(Message = "No data available"),
+        rownames = FALSE
+      )
+    )
+  }
+
+  # Select and reorder columns: key identifiers, then headcount/mean,
+  # then gdp/pce/pop, then cpi, then other indicators
+  key_cols <- c(
+    "country_code",
+    "reporting_year",
+    "survey_year",
+    "reporting_level",
+    "welfare_type"
+  )
+
+  # Priority indicator columns (headcount, mean)
+  priority_indicators <- c("headcount", "mean")
+  # Secondary columns (gdp, pce, pop)
+  secondary_vars <- c("reporting_gdp", "reporting_pce", "reporting_pop")
+  # Tertiary (cpi)
+  tertiary_vars <- c("cpi", "ppp")
+
+  # Build column lists with .old/.new suffixes
+  build_pairs <- function(vars) {
+    pairs <- character(0)
+    for (v in vars) {
+      col_new <- paste0(v, ".x")
+      col_old <- paste0(v, ".y")
+      if (col_new %in% names(lineup_data)) {
+        pairs <- c(pairs, col_new)
+      }
+      if (col_old %in% names(lineup_data)) {
+        pairs <- c(pairs, col_old)
+      }
+      # Also include diff if available
+      col_diff <- paste0(v, "_diff")
+      if (col_diff %in% names(lineup_data)) {
+        pairs <- c(pairs, col_diff)
+      }
+    }
+    pairs
+  }
+
+  priority_cols <- build_pairs(priority_indicators)
+  secondary_cols <- build_pairs(secondary_vars)
+  tertiary_cols <- build_pairs(tertiary_vars)
+
+  # Keep key columns that exist
+  key_cols <- intersect(key_cols, names(lineup_data))
+  all_selected <- unique(c(
+    key_cols,
+    priority_cols,
+    secondary_cols,
+    tertiary_cols
+  ))
+  all_selected <- intersect(all_selected, names(lineup_data))
+
+  result <- lineup_data[, .SD, .SDcols = all_selected]
+
+  # Rename .x -> .new and .y -> .old
+  old_names <- names(result)
+  new_names <- gsub("\\.x$", ".new", old_names)
+  new_names <- gsub("\\.y$", ".old", new_names)
+  data.table::setnames(result, old_names, new_names)
+
+  data.table::setorder(result, -reporting_year)
+
+  DT::datatable(
+    result,
+    filter = "top",
+    rownames = FALSE,
+    options = list(
+      pageLength = nrow(result),
+      scrollX = TRUE,
+      scrollY = "600px",
+      paging = FALSE
+    )
+  )
+})
 ```
 
 # Guide {orientation="columns"}
@@ -1159,41 +1455,47 @@ shiny::uiOutput("flagged_survey")
 
 #### Aggregates Heatmap
 ```{r}
-plotly::plotlyOutput("heatmap_agg", height = "500px")
+plotly::plotlyOutput("heatmap_agg", height = "500px") |>
+  shinycssloaders::withSpinner()
 ```
 
 #### Lineups Heatmap
 ```{r}
-plotly::plotlyOutput("heatmap_lineup", height = "500px")
+plotly::plotlyOutput("heatmap_lineup", height = "500px") |>
+  shinycssloaders::withSpinner()
 ```
 
 #### Surveys Heatmap
 ```{r}
-plotly::plotlyOutput("heatmap_survey", height = "500px")
+plotly::plotlyOutput("heatmap_survey", height = "500px") |>
+  shinycssloaders::withSpinner()
 ```
 
 ### {.tabset width="50%"}
 
 #### Aggregates Table
 ```{r}
-DT::DTOutput("tbl_flagged_agg")
+DT::DTOutput("tbl_flagged_agg") |>
+  shinycssloaders::withSpinner()
 ```
 
 #### Lineups Table
 ```{r}
-DT::DTOutput("tbl_flagged_lineups")
+DT::DTOutput("tbl_flagged_lineups") |>
+  shinycssloaders::withSpinner()
 ```
 
 #### Surveys Table
 ```{r}
-DT::DTOutput("tbl_flagged_surveys")
+DT::DTOutput("tbl_flagged_surveys") |>
+  shinycssloaders::withSpinner()
 ```
 
 # Aggregates Detail {scrolling="true"}
 
-## Row {height="100px"}
+## Row {height="80px"}
 
-### {width="50%"}
+### {width="30%"}
 ```{r}
 #| label: toolbar-aggregates-region
 shiny::selectInput(
@@ -1216,7 +1518,7 @@ shiny::selectInput(
 )
 ```
 
-### {width="50%"}
+### {width="70%"}
 ```{r}
 #| label: toolbar-aggregates-year
 shiny::uiOutput("year_range_agg_ui")
@@ -1228,13 +1530,15 @@ shiny::uiOutput("year_range_agg_ui")
 
 ```{r}
 #| label: plot-agg-timeseries
-shiny::uiOutput("plot_agg_ts_container")
+shiny::uiOutput("plot_agg_ts_container") |>
+  shinycssloaders::withSpinner()
 ```
 
 ### Regional Comparison
 
 ```{r}
-plotly::plotlyOutput("plot_agg_bars", height = "500px")
+plotly::plotlyOutput("plot_agg_bars", height = "500px") |>
+  shinycssloaders::withSpinner()
 ```
 
 ### Driver Table
@@ -1246,7 +1550,8 @@ find the main drivers. Positive = increase, negative = decrease.
 
 ```{r}
 #| label: table-driver
-DT::DTOutput("tbl_driver")
+DT::DTOutput("tbl_driver") |>
+  shinycssloaders::withSpinner()
 ```
 
 # Country Detail
@@ -1262,16 +1567,26 @@ shiny::uiOutput("year_range_country_ui")
 
 ---
 
-**Survey coverage changes:**
+**Auxiliary Indicator:**
 ```{r}
-tableOutput("tbl_coverage")
+shiny::selectInput(
+  "aux_indicator",
+  label = NULL,
+  choices = c(
+    "PCE" = "pce",
+    "GDP" = "gdp",
+    "Population" = "pop",
+    "CPI" = "cpi"
+  ),
+  selected = "pce"
+)
 ```
 
 ---
 
-**Survey Data Comparison:**
+**Survey coverage changes:**
 ```{r}
-DT::DTOutput("tbl_survey")
+tableOutput("tbl_coverage")
 ```
 
 ## Column
@@ -1279,11 +1594,33 @@ DT::DTOutput("tbl_survey")
 ### Lineup Time Series
 
 ```{r}
-plotly::plotlyOutput("plot_country_ts", height = "400px")
+plotly::plotlyOutput("plot_country_ts", height = "400px") |>
+  shinycssloaders::withSpinner()
 ```
 
-### Source of Change
+### Auxiliary Indicator Trend
 
 ```{r}
-DT::DTOutput("tbl_source")
+plotly::plotlyOutput("plot_country_aux", height = "400px") |>
+  shinycssloaders::withSpinner()
+```
+
+# Country Table
+
+## {.sidebar}
+
+```{r}
+#| label: sidebar-country-table
+shiny::uiOutput("country_selector_tbl_ui")
+
+shiny::uiOutput("year_range_tbl_ui")
+```
+
+## Column
+
+### Survey & Source Data
+
+```{r}
+DT::DTOutput("tbl_country_combined") |>
+  shinycssloaders::withSpinner()
 ```
