@@ -1,5 +1,5 @@
 ---
-title: "Lineup Checks Dashboard — PIP Data Revisions"
+title: "PIP Data comparison"
 format:
   dashboard:
     theme: yeti
