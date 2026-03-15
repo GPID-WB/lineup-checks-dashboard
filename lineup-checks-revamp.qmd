@@ -1,0 +1,1098 @@
+---
+title: "Lineup Checks Dashboard — PIP Data Revisions"
+format: dashboard
+server: shiny
+theme: yeti
+---
+
+```{r}
+#| context: setup
+#| label: setup
+
+library(data.table)
+
+# Load source scripts
+source(here::here("R", "process_data.R"))
+source(here::here("R", "change_detection.R"))
+source(here::here("R", "summary_tables.R"))
+
+# Load both PPP years (suppress benign data.table shallow-copy warnings)
+ppp_data_2021 <- suppressWarnings(
+  process_ppp_data_extended("2021", data_dir = "data")
+)
+ppp_data_2017 <- suppressWarnings(
+  process_ppp_data_extended("2017", data_dir = "data")
+)
+
+# Poverty lines differ by PPP version
+poverty_lines_2021 <- c("3.0", "4.2", "8.3")
+poverty_lines_2017 <- c("2.15", "3.65", "6.85")
+```
+
+# {.sidebar width="320px"}
+
+## Data & Method Selection
+
+### PPP Version
+```{r}
+shiny::radioButtons(
+  "ppp_version",
+  label = "PPP Version:",
+  choices = c("2021" = "2021", "2017" = "2017"),
+  selected = "2021"
+)
+```
+
+### Significance Method
+```{r}
+shiny::selectInput(
+  "method",
+  label = "Change Detection Method:",
+  choices = c(
+    "Relative + Absolute Floor" = "relative",
+    "Z-Score" = "zscore",
+    "Absolute Difference" = "absolute"
+  ),
+  selected = "relative"
+)
+```
+
+### Threshold
+```{r}
+shiny::sliderInput(
+  "threshold",
+  label = "Threshold:",
+  min = 0,
+  max = 10,
+  value = 5,
+  step = 0.1
+)
+```
+
+### Absolute Floor (for Relative method)
+```{r}
+shiny::uiOutput("abs_floor_ui")
+```
+
+### Primary Indicators
+```{r}
+shiny::selectInput(
+  "indicator",
+  label = "Indicator:",
+  choices = c("headcount", "mean"),
+  selected = "headcount"
+)
+```
+
+### Poverty Line
+```{r}
+shiny::uiOutput("poverty_line_ui")
+```
+
+---
+
+```{r}
+#| context: server
+#| label: server-core
+
+# --- Core Reactives ---
+
+# Reactive: current PPP dataset (full list)
+merged_data <- reactive({
+  if (input$ppp_version == "2021") {
+    ppp_data_2021
+  } else {
+    ppp_data_2017
+  }
+})
+
+# Reactive: threshold value (normalized to 0-1 scale for methods)
+threshold_val <- reactive({
+  switch(
+    input$method,
+    "relative" = input$threshold / 100,
+    "zscore"   = input$threshold,
+    "absolute" = input$threshold / 100
+  )
+})
+
+# Reactive: abs_floor (only used for relative method)
+abs_floor_val <- reactive({
+  if (input$method == "relative") {
+    input$abs_floor
+  } else {
+    NULL
+  }
+})
+
+# Reactive: dynamic year range bounds computed from actual data
+year_range_bounds <- reactive({
+  data <- merged_data()
+  all_years <- c(
+    data$agg_merged$reporting_year,
+    data$lineups_merged$reporting_year
+  )
+  list(
+    min = min(all_years, na.rm = TRUE),
+    max = max(all_years, na.rm = TRUE)
+  )
+})
+
+# Reactive: region-filtered aggregate data (shared across Aggregates page)
+agg_region_filtered <- reactive({
+  shiny::req(input$poverty_line)
+  data <- merged_data()
+  .pl  <- as.numeric(input$poverty_line)
+  dt   <- data$agg_merged[
+    poverty_line == .pl &
+      reporting_year >= input$year_range_agg[[1L]] &
+      reporting_year <= input$year_range_agg[[2L]]
+  ]
+  if (!is.null(input$region_filter) && input$region_filter != "All") {
+    dt <- dt[region_code == input$region_filter]
+  }
+  dt
+})
+
+# --- Dynamic UI outputs ---
+
+# Poverty line selector (values depend on PPP version)
+output$poverty_line_ui <- shiny::renderUI({
+  pls <- if (input$ppp_version == "2021") {
+    poverty_lines_2021
+  } else {
+    poverty_lines_2017
+  }
+  shiny::selectInput(
+    "poverty_line",
+    label = "Poverty Line:",
+    choices = pls,
+    selected = pls[1]
+  )
+})
+
+# Absolute floor slider (conditional on method)
+output$abs_floor_ui <- shiny::renderUI({
+  if (input$method == "relative") {
+    shiny::sliderInput(
+      "abs_floor",
+      label = "Absolute Floor:",
+      min   = 0,
+      max   = 0.05,
+      value = 0.005,
+      step  = 0.0001
+    )
+  }
+})
+
+# Year range sliders — bounds computed dynamically from actual data
+output$year_range_agg_ui <- shiny::renderUI({
+  bounds <- year_range_bounds()
+  shiny::sliderInput(
+    "year_range_agg",
+    label = "Year Range:",
+    min   = bounds$min,
+    max   = bounds$max,
+    value = c(bounds$min, bounds$max),
+    step  = 1L
+  )
+})
+
+output$year_range_country_ui <- shiny::renderUI({
+  bounds <- year_range_bounds()
+  shiny::sliderInput(
+    "year_range_country",
+    label = "Year Range:",
+    min   = bounds$min,
+    max   = bounds$max,
+    value = c(bounds$min, bounds$max),
+    step  = 1L
+  )
+})
+
+# Country selector (populated from merged data)
+country_choices <- reactive({
+  data <- merged_data()
+  sort(unique(data$lineups_merged$country_code))
+})
+
+output$country_selector_ui <- shiny::renderUI({
+  shiny::selectInput(
+    "country_filter",
+    label = "Country:",
+    choices = country_choices(),
+    selected = country_choices()[1]
+  )
+})
+
+# All-indicators selector (populated from merged data)
+all_indicators_reactive <- reactive({
+  data <- merged_data()
+  unique_inds <- unique(c(
+    data$survey_indicators,
+    data$lineup_indicators,
+    data$agg_indicators
+  ))
+  sort(unique_inds)
+})
+
+output$indicator_all_ui <- shiny::renderUI({
+  shiny::selectInput(
+    "indicator_all",
+    label = "Indicator:",
+    choices = all_indicators_reactive(),
+    selected = "headcount"
+  )
+})
+
+# --- Value boxes ---
+
+output$flagged_agg <- shiny::renderUI({
+  shiny::req(input$poverty_line)
+  data <- merged_data()
+  .pl <- as.numeric(input$poverty_line)
+
+  agg_data <- data$agg_merged[poverty_line == .pl]
+  flagged <- add_flag_col(
+    data.table::copy(agg_data),
+    input$indicator,
+    method = input$method,
+    threshold = threshold_val(),
+    abs_floor = abs_floor_val()
+  )
+
+  count <- sum(flagged[[paste0(input$indicator, "_flagged")]], na.rm = TRUE)
+  total <- nrow(flagged)
+
+  bslib::value_box(
+    title = "Aggregates Flagged",
+    value = count,
+    subtitle = paste0("out of ", total),
+    theme = if (count > 0) "warning" else "success",
+    showcase = bsicons::bs_icon("exclamation-triangle")
+  )
+})
+
+output$flagged_lineup <- shiny::renderUI({
+  shiny::req(input$poverty_line)
+  data <- merged_data()
+  .pl <- as.numeric(input$poverty_line)
+
+  lineup_data <- data$lineups_merged[poverty_line == .pl]
+  flagged <- add_flag_col(
+    data.table::copy(lineup_data),
+    input$indicator,
+    method = input$method,
+    threshold = threshold_val(),
+    abs_floor = abs_floor_val()
+  )
+
+  count <- sum(flagged[[paste0(input$indicator, "_flagged")]], na.rm = TRUE)
+  total <- nrow(flagged)
+
+  bslib::value_box(
+    title = "Lineup Flagged",
+    value = count,
+    subtitle = paste0("out of ", total),
+    theme = if (count > 0) "warning" else "success",
+    showcase = bsicons::bs_icon("exclamation-triangle")
+  )
+})
+
+output$flagged_survey <- shiny::renderUI({
+  shiny::req(input$poverty_line)
+  data <- merged_data()
+  .pl <- as.numeric(input$poverty_line)
+
+  survey_data <- data$surveys_merged[poverty_line == .pl]
+  flagged <- add_flag_col(
+    data.table::copy(survey_data),
+    input$indicator,
+    method = input$method,
+    threshold = threshold_val(),
+    abs_floor = abs_floor_val()
+  )
+
+  count <- sum(flagged[[paste0(input$indicator, "_flagged")]], na.rm = TRUE)
+  total <- nrow(flagged)
+
+  bslib::value_box(
+    title = "Survey Flagged",
+    value = count,
+    subtitle = paste0("out of ", total),
+    theme = if (count > 0) "warning" else "success",
+    showcase = bsicons::bs_icon("exclamation-triangle")
+  )
+})
+```
+
+# Change Overview
+
+## Summary Statistics
+
+### Aggregates
+```{r}
+shiny::uiOutput("flagged_agg")
+```
+
+### Lineup
+```{r}
+shiny::uiOutput("flagged_lineup")
+```
+
+### Survey
+```{r}
+shiny::uiOutput("flagged_survey")
+```
+
+## Regional Heatmap
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    # Build overview table from aggregates (regions × years)
+    overview <- build_overview_agg(
+      data$agg_merged[poverty_line == .pl],
+      indicator = input$indicator,
+      poverty_line = .pl,
+      method = input$method,
+      threshold = threshold_val(),
+      abs_floor = abs_floor_val()
+    )
+
+    overview
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+## Flagged Changes by Country & Year
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    # Filter lineup data to selected year and poverty line
+    lineup_subset <- data$lineups_merged[poverty_line == .pl]
+
+    # Add flags
+    flagged <- add_flag_col(
+      data.table::copy(lineup_subset),
+      input$indicator,
+      method = input$method,
+      threshold = threshold_val(),
+      abs_floor = abs_floor_val()
+    )
+
+    # Get only flagged rows and relevant columns
+    flag_col_name <- paste0(input$indicator, "_flagged")
+    ind_x <- paste0(input$indicator, ".x")
+    ind_y <- paste0(input$indicator, ".y")
+    ind_diff <- paste0(input$indicator, "_diff")
+
+    # Extract flagged observations
+    flagged_subset <- flagged[
+      get(flag_col_name) == TRUE,
+      list(
+        country_code,
+        region_code,
+        reporting_year,
+        old_value = get(ind_y),
+        new_value = get(ind_x),
+        difference = get(ind_diff)
+      )
+    ]
+
+    # Order by absolute difference descending
+    data.table::setorder(flagged_subset, -abs(difference))
+
+    flagged_subset
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+# Aggregates Detail
+
+## {.sidebar}
+
+```{r}
+#| label: sidebar-aggregates-region
+shiny::selectInput(
+  "region_filter",
+  label = "Region(s):",
+  choices = c(
+    "All",
+    "AFE",
+    "AFW",
+    "EAS",
+    "ECS",
+    "LAC",
+    "MNA",
+    "SAR",
+    "SSA",
+    "WLD"
+  ),
+  selected = "All",
+  multiple = FALSE
+)
+
+shiny::uiOutput("year_range_agg_ui")
+```
+
+## Time Series
+
+```{r}
+#| label: plot-agg-timeseries
+shiny::renderPlot(
+  {
+    agg_data <- agg_region_filtered()
+
+    if (nrow(agg_data) == 0L) {
+      return(
+        ggplot2::ggplot() +
+          ggplot2::annotate("text", x = 0.5, y = 0.5,
+                            label = "No data for selection") +
+          ggplot2::theme_void()
+      )
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator, ".x")
+    ind_y <- paste0(input$indicator, ".y")
+
+    # Plot old vs new over time
+    p <- ggplot2::ggplot(
+      agg_data,
+      ggplot2::aes(x = reporting_year)
+    ) +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data[[ind_x]], color = "New"),
+        linewidth = 1
+      ) +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data[[ind_y]], color = "Old"),
+        linewidth = 1,
+        linetype = "dashed"
+      ) +
+      ggplot2::facet_wrap(~region_code) +
+      ggplot2::scale_color_manual(
+        values = c("New" = "#2E86AB", "Old" = "#A23B72")
+      ) +
+      ggplot2::labs(
+        title = paste0(input$indicator, " Over Time"),
+        x     = "Year",
+        y     = input$indicator,
+        color = "Version"
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        legend.position = "top",
+        panel.spacing   = ggplot2::unit(1, "lines")
+      )
+
+    p
+  },
+  height = 500
+)
+```
+
+## Driver Table
+
+```{r}
+#| label: table-driver
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line)
+    data <- merged_data()
+    .pl  <- as.numeric(input$poverty_line)
+
+    # Filter to selected region, poverty line, and latest year in range
+    lineup_subset <- data$lineups_merged[
+      poverty_line == .pl &
+        reporting_year == max(reporting_year)
+    ]
+
+    if (!is.null(input$region_filter) && input$region_filter != "All") {
+      lineup_subset <- lineup_subset[region_code == input$region_filter]
+    }
+
+    if (nrow(lineup_subset) == 0) {
+      return(data.frame(Message = "No data available for selection"))
+    }
+
+    # Build driver table (countries ranked by weighted contribution)
+    drivers <- build_driver_table(
+      lineup_subset,
+      region     = if (input$region_filter == "All") "WLD" else input$region_filter,
+      year       = max(lineup_subset$reporting_year),
+      poverty_line = .pl,
+      indicator  = input$indicator
+    )
+
+    drivers
+  },
+  striped  = TRUE,
+  hover    = TRUE,
+  bordered = TRUE
+)
+```
+
+## Regional Comparison
+
+```{r}
+shiny::renderPlot(
+  {
+    shiny::req(input$poverty_line)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    # Build regional bar chart for the most recent year
+    agg_data <- data$agg_merged[poverty_line == .pl]
+    latest_year <- max(agg_data$reporting_year)
+
+    agg_latest <- agg_data[reporting_year == latest_year]
+
+    # Compute differences
+    ind_x <- paste0(input$indicator, ".x")
+    ind_y <- paste0(input$indicator, ".y")
+
+    agg_latest[, diff := get(ind_x) - get(ind_y)]
+
+    # Plot
+    p <- ggplot2::ggplot(
+      agg_latest,
+      ggplot2::aes(x = reorder(region_code, -abs(diff)), y = diff)
+    ) +
+      ggplot2::geom_col(
+        ggplot2::aes(fill = diff > 0),
+        width = 0.7
+      ) +
+      ggplot2::scale_fill_manual(
+        values = c("TRUE" = "#06A77D", "FALSE" = "#D62828"),
+        labels = c("TRUE" = "Increase", "FALSE" = "Decrease")
+      ) +
+      ggplot2::coord_flip() +
+      ggplot2::labs(
+        title = paste0(
+          input$indicator,
+          " Change by Region (",
+          latest_year,
+          ")"
+        ),
+        x = "Region",
+        y = paste0("Change in ", input$indicator),
+        fill = "Direction"
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        legend.position = "top"
+      )
+
+    p
+  },
+  height = 400
+)
+```
+
+# Country Detail
+
+## {.sidebar}
+
+```{r}
+#| label: sidebar-country
+shiny::uiOutput("country_selector_ui")
+
+shiny::uiOutput("year_range_country_ui")
+```
+
+## Lineup Time Series
+
+```{r}
+shiny::renderPlot(
+  {
+    shiny::req(input$poverty_line, input$country_filter)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    if (is.null(input$country_filter)) {
+      return(NULL)
+    }
+
+    # Filter lineup data for selected country
+    lineup_data <- data$lineups_merged[
+      country_code == input$country_filter &
+        poverty_line == .pl &
+        reporting_year >= input$year_range_country[1] &
+        reporting_year <= input$year_range_country[2]
+    ]
+
+    if (nrow(lineup_data) == 0) {
+      return(
+        ggplot2::ggplot() +
+          ggplot2::annotate(
+            "text",
+            x = 0.5,
+            y = 0.5,
+            label = "No data available"
+          ) +
+          ggplot2::theme_void()
+      )
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator, ".x")
+    ind_y <- paste0(input$indicator, ".y")
+
+    # Reshape for plotting
+    plot_data <- lineup_data[, list(
+      reporting_year,
+      new_val = get(ind_x),
+      old_val = get(ind_y)
+    )]
+
+    plot_data <- data.table::melt(
+      plot_data,
+      id.vars = "reporting_year",
+      variable.name = "version",
+      value.name = "value"
+    )
+
+    plot_data[, version := ifelse(version == "new_val", "New", "Old")]
+
+    # Plot
+    p <- ggplot2::ggplot(
+      plot_data,
+      ggplot2::aes(
+        x = reporting_year,
+        y = value,
+        color = version,
+        linetype = version
+      )
+    ) +
+      ggplot2::geom_line(linewidth = 1) +
+      ggplot2::geom_point(size = 2) +
+      ggplot2::scale_color_manual(
+        values = c("New" = "#2E86AB", "Old" = "#A23B72")
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = c("New" = "solid", "Old" = "dashed")
+      ) +
+      ggplot2::labs(
+        title = paste0(input$indicator, " — ", input$country_filter),
+        x = "Year",
+        y = input$indicator,
+        color = "Version",
+        linetype = "Version"
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        legend.position = "top"
+      )
+
+    p
+  },
+  height = 400
+)
+```
+
+## Survey Data Comparison
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line, input$country_filter)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    # Filter survey data for selected country
+    survey_data <- data$surveys_merged[
+      country_code == input$country_filter &
+        poverty_line == .pl &
+        reporting_year >= input$year_range_country[1] &
+        reporting_year <= input$year_range_country[2]
+    ]
+
+    if (nrow(survey_data) == 0) {
+      return(data.frame(Message = "No survey data available"))
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator, ".x")
+    ind_y <- paste0(input$indicator, ".y")
+    ind_diff <- paste0(input$indicator, "_diff")
+
+    # Extract relevant columns
+    result <- survey_data[, list(
+      reporting_year,
+      survey_year,
+      old_value = get(ind_y),
+      new_value = get(ind_x),
+      difference = get(ind_diff)
+    )]
+
+    data.table::setorder(result, -reporting_year)
+    result
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+## Source of Change
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line, input$country_filter)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    if (is.null(input$country_filter)) {
+      return(data.frame())
+    }
+
+    # Build source table for the selected country
+    source_tbl <- build_source_table(
+      data$lineups_merged,
+      country = input$country_filter,
+      poverty_line = .pl,
+      year_range = input$year_range_country
+    )
+
+    if (nrow(source_tbl) == 0) {
+      return(data.frame(Message = "No explanatory variable data"))
+    }
+
+    source_tbl
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+## Survey Coverage Changes
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$country_filter)
+    data <- merged_data()
+
+    # Check survey coverage changes for this country
+    survey_cov <- data$survey_coverage_diff[
+      country_code == input$country_filter
+    ]
+
+    if (nrow(survey_cov) == 0) {
+      return(data.frame(Message = "No survey coverage changes"))
+    }
+
+    survey_cov[, list(
+      survey_year,
+      coverage_status
+    )]
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+# All Indicators
+
+## {.sidebar}
+
+```{r}
+shiny::uiOutput("indicator_all_ui")
+```
+
+## Scatter Plot (Old vs New)
+
+```{r}
+#| label: plot-scatter
+shiny::renderPlot(
+  {
+    data <- merged_data()
+    .pl  <- as.numeric(input$poverty_line)
+
+    if (is.null(input$indicator_all)) {
+      return(NULL)
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator_all, ".x")
+    ind_y <- paste0(input$indicator_all, ".y")
+
+    # Use lineup data (country-level, most relevant)
+    scatter_data <- data$lineups_merged[
+      poverty_line == .pl &
+        !is.na(get(ind_x)) &
+        !is.na(get(ind_y))
+    ]
+
+    if (nrow(scatter_data) == 0) {
+      return(
+        ggplot2::ggplot() +
+          ggplot2::annotate(
+            "text",
+            x = 0.5,
+            y = 0.5,
+            label = "No data available"
+          ) +
+          ggplot2::theme_void()
+      )
+    }
+
+    # Create scatter plot — use region_code (normalised by process_ppp_data_extended)
+    p <- ggplot2::ggplot(
+      scatter_data,
+      ggplot2::aes(
+        x     = .data[[ind_y]],
+        y     = .data[[ind_x]],
+        color = region_code
+      )
+    ) +
+      ggplot2::geom_point(size = 2, alpha = 0.7) +
+      ggplot2::geom_abline(
+        slope     = 1,
+        intercept = 0,
+        linetype  = "dashed",
+        color     = "gray50"
+      ) +
+      ggplot2::scale_color_viridis_d() +
+      ggplot2::labs(
+        title = paste0(input$indicator_all, " — Old vs New"),
+        x     = paste0(input$indicator_all, " (Old)"),
+        y     = paste0(input$indicator_all, " (New)"),
+        color = "Region"
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(legend.position = "right")
+
+    p
+  },
+  height = 500
+)
+```
+
+## Bland-Altman Plot
+
+```{r}
+shiny::renderPlot(
+  {
+    shiny::req(input$poverty_line, input$indicator_all)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    if (is.null(input$indicator_all)) {
+      return(NULL)
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator_all, ".x")
+    ind_y <- paste0(input$indicator_all, ".y")
+
+    # Use lineup data
+    ba_data <- data$lineups_merged[
+      poverty_line == .pl &
+        !is.na(get(ind_x)) &
+        !is.na(get(ind_y))
+    ]
+
+    if (nrow(ba_data) == 0) {
+      return(
+        ggplot2::ggplot() +
+          ggplot2::annotate(
+            "text",
+            x = 0.5,
+            y = 0.5,
+            label = "No data available"
+          ) +
+          ggplot2::theme_void()
+      )
+    }
+
+    # Compute mean and difference
+    ba_data[, mean_val := (get(ind_x) + get(ind_y)) / 2]
+    ba_data[, diff_val := get(ind_x) - get(ind_y)]
+
+    # Compute 95% limits of agreement
+    mean_diff <- mean(ba_data$diff_val, na.rm = TRUE)
+    sd_diff <- sd(ba_data$diff_val, na.rm = TRUE)
+    upper_loa <- mean_diff + 1.96 * sd_diff
+    lower_loa <- mean_diff - 1.96 * sd_diff
+
+    # Plot
+    p <- ggplot2::ggplot(
+      ba_data,
+      ggplot2::aes(x = mean_val, y = diff_val, color = region_code)
+    ) +
+      ggplot2::geom_point(size = 2, alpha = 0.7) +
+      ggplot2::geom_hline(
+        yintercept = mean_diff,
+        linetype = "solid",
+        color = "blue"
+      ) +
+      ggplot2::geom_hline(
+        yintercept = upper_loa,
+        linetype = "dashed",
+        color = "red"
+      ) +
+      ggplot2::geom_hline(
+        yintercept = lower_loa,
+        linetype = "dashed",
+        color = "red"
+      ) +
+      ggplot2::scale_color_viridis_d() +
+      ggplot2::labs(
+        title = paste0(input$indicator_all, " — Bland-Altman Plot"),
+        x = paste0("Mean (", input$indicator_all, ")"),
+        y = "Difference (New - Old)",
+        color = "Region"
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        legend.position = "right"
+      )
+
+    p
+  },
+  height = 500
+)
+```
+
+## Flagged Outliers
+
+```{r}
+shiny::renderTable(
+  {
+    shiny::req(input$poverty_line, input$indicator_all)
+    data <- merged_data()
+    .pl <- as.numeric(input$poverty_line)
+
+    if (is.null(input$indicator_all)) {
+      return(data.frame())
+    }
+
+    # Get indicator columns
+    ind_x <- paste0(input$indicator_all, ".x")
+    ind_y <- paste0(input$indicator_all, ".y")
+
+    # Use lineup data
+    outlier_data <- data$lineups_merged[poverty_line == .pl]
+
+    # Add flags
+    outlier_flagged <- add_flag_col(
+      data.table::copy(outlier_data),
+      input$indicator_all,
+      method = input$method,
+      threshold = threshold_val(),
+      abs_floor = abs_floor_val()
+    )
+
+    # Extract flagged observations
+    flag_col_name <- paste0(input$indicator_all, "_flagged")
+    ind_diff <- paste0(input$indicator_all, "_diff")
+
+    outliers <- outlier_flagged[
+      get(flag_col_name) == TRUE,
+      list(
+        country_code,
+        region_code,
+        reporting_year,
+        old_value = get(ind_y),
+        new_value = get(ind_x),
+        difference = get(ind_diff)
+      )
+    ]
+
+    if (nrow(outliers) == 0) {
+      return(data.frame(Message = "No flagged outliers"))
+    }
+
+    data.table::setorder(outliers, -abs(difference))
+    outliers
+  },
+  striped = TRUE,
+  hover = TRUE,
+  bordered = TRUE
+)
+```
+
+# About
+
+## How This Dashboard Works
+
+This dashboard compares **new** PIP pipeline data against **old** (published)
+data to identify meaningful changes in poverty estimates. It works across three
+levels: regional/global **aggregates**, country-level **lineup years**
+(interpolated/extrapolated), and **survey years** (actual survey data).
+
+### Sidebar Controls
+
+| Control | Description |
+|---|---|
+| **PPP Version** | Toggle between PPP 2021 (poverty lines: \$3.0, \$4.2, \$8.3/day) and PPP 2017 (\$2.15, \$3.65, \$6.85/day). |
+| **Change Detection Method** | How changes are assessed for significance. See below. |
+| **Threshold** | Sensitivity of the flagging. Lower = more flags. |
+| **Absolute Floor** | Minimum absolute change required (Relative method only). Prevents flagging tiny values with large percentage swings. |
+| **Indicator** | Primary poverty indicator to analyse (headcount or mean on main pages; all indicators on the "All Indicators" page). |
+| **Poverty Line** | International poverty line in \$/day (PPP). Values update automatically with PPP version. |
+
+### Change Detection Methods
+
+**Relative + Absolute Floor** *(default)*
+
+A change is flagged when **both** conditions are met:
+
+- The relative change exceeds the threshold: $\frac{|\text{new} - \text{old}|}{|\text{old}|} > \frac{\text{threshold}}{100}$
+- The absolute change exceeds the floor: $|\text{new} - \text{old}| > \text{abs\_floor}$
+
+The absolute floor prevents false positives from near-zero values (e.g., a
+headcount moving from 0.001 to 0.002 is a 100% relative change but
+meaningless in practice).
+
+**Z-Score**
+
+Computes the z-score of each change relative to the distribution of all
+changes (trimmed at 1% tails). A change is flagged when $|z| > \text{threshold}$.
+Useful for detecting outliers in the distribution of revisions.
+
+**Absolute Difference**
+
+Flags changes where $|\text{new} - \text{old}| > \frac{\text{threshold}}{100}$.
+Simplest method — treats all changes the same regardless of the baseline level.
+
+### Pages
+
+| Page | Purpose |
+|---|---|
+| **Change Overview** | Entry point. Value boxes show total flagged changes at each level. Regional heatmap and flagged-country table give a quick picture of where revisions occurred. |
+| **Aggregates Detail** | Drill into regional aggregates. Time-series of old vs new, driver table showing which countries contribute most to a regional change, and a bar chart of change direction by region. |
+| **Country Detail** | Select a country to see its lineup time-series, survey-year comparison, and a source-of-change panel showing which explanatory variables (GDP, consumption, population, CPI, welfare type) also changed. |
+| **All Indicators** | Compare any indicator (not just headcount/mean). Scatter plot (old vs new with 45° line), Bland-Altman plot (agreement analysis), and an outlier table. |
+
+### Interpreting the Threshold Slider
+
+The slider ranges from 0 to 10. Its meaning depends on the method:
+
+- **Relative**: Threshold 5 = flag changes > 5% relative difference
+- **Z-Score**: Threshold 2 = flag changes > 2 standard deviations
+- **Absolute**: Threshold 1 = flag changes > 0.01 in absolute terms
+
+Setting the threshold to 0 shows **all** changes (nothing is filtered). This
+ensures no revision is hidden — useful for a complete audit.

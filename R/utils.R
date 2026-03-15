@@ -1,34 +1,79 @@
+#' Load an .fst data file from the GPID-WB/pip-sandbox GitHub repository
+#'
+#' Downloads a file from the pip-sandbox repository at the given PPP year
+#' subdirectory and reads it as a `data.table`. Errors immediately if the
+#' HTTP request fails (e.g., 404, network outage) rather than silently
+#' writing an error page to disk.
+#'
+#' @param filename Character scalar. Name of the `.fst` file to load
+#'   (e.g., `"aggregates.fst"`).
+#' @param ppp_year Character scalar. PPP reference year: `"2021"` or `"2017"`.
+#' @param data_branch Character scalar. Git branch to download from.
+#'   Defaults to `"main"`.
+#'
+#' @return A `data.table` containing the loaded data.
+#'
+#' @family utils
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   agg <- load_from_repo("aggregates.fst", ppp_year = "2021")
+#' }
 load_from_repo <- \(
   filename,
-  ppp_year = c("2021", "2017"),
+  ppp_year   = c("2021", "2017"),
   data_branch = "main"
 ) {
   ppp_year <- as.character(ppp_year)
   ppp_year <- match.arg(ppp_year)
 
-  gh_user <- "https://raw.githubusercontent.com"
+  # GitHub raw content URL — update GH_ORG / GH_REPO if the repo moves
+  GH_BASE <- "https://raw.githubusercontent.com"
+  GH_ORG  <- "GPID-WB"
+  GH_REPO <- "pip-sandbox"
+
   org_data <- paste(
-    gh_user,
-    "GPID-WB",
-    "pip-sandbox",
-    data_branch,
-    "data",
-    ppp_year,
-    filename,
+    GH_BASE, GH_ORG, GH_REPO, data_branch,
+    "data", ppp_year, filename,
     sep = "/"
   )
 
   temp_file <- tempfile(fileext = fs::path_ext(filename))
   req <- httr::GET(
     org_data,
-    # write result to disk
     httr::write_disk(path = temp_file)
+  )
+  httr::stop_for_status(
+    req,
+    task = paste("download", filename, "for PPP", ppp_year)
   )
 
   fst::read_fst(temp_file, as.data.table = TRUE)
 }
 
 
+#' Plot trend lines comparing old and new pipeline estimates
+#'
+#' Creates a `ggplotly`-interactive line chart showing the old vs new
+#' indicator values over time for a given country. Each line corresponds
+#' to one `unique_econ` (country-level-welfare combination).
+#'
+#' @param dt A `data.table` with columns `reporting_year`, `text`
+#'   (tooltip label), `unique_econ` (line grouping), `yx` (new values),
+#'   and `yy` (old values).
+#' @param country Character scalar. Country name used in the plot title.
+#' @param indicator Character scalar. Indicator name used as the y-axis label.
+#'
+#' @return A `plotly` object.
+#'
+#' @family utils
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   g_trends(dt_country, "China", "headcount")
+#' }
 g_trends <- \(dt, country, indicator) {
   g <- ggplot(
     data = dt,
@@ -54,6 +99,31 @@ g_trends <- \(dt, country, indicator) {
 }
 
 
+#' Load and process PIP pipeline data for one PPP year (legacy)
+#'
+#' @description
+#' **Deprecated.** Use [process_ppp_data_extended()] from `process_data.R`
+#' instead. This function is retained for compatibility with the legacy
+#' `.Rmd` dashboard only.
+#'
+#' Reads old and new `.fst` files for `ppp_year`, merges each data type
+#' (survey, lineup, aggregates), and computes `_diff`, `_perc`, `_ratio`
+#' columns for all indicators.
+#'
+#' @param ppp_year Character scalar. PPP reference year: `"2021"` or `"2017"`.
+#'
+#' @return A named list with elements `surveys_merged`, `agg_merged`,
+#'   `lineups_merged`, `survey_indicators`, `agg_indicators`,
+#'   `lineup_indicators`, `countries_available`, `regions_available`,
+#'   `dup_countries`, `dt_survey_new`.
+#'
+#' @family utils
+#' @seealso [process_ppp_data_extended()]
+#'
+#' @examples
+#' \dontrun{
+#'   d <- process_ppp_data("2021")
+#' }
 process_ppp_data <- function(ppp_year) {
   data_dir <- file.path("data", ppp_year)
 
@@ -107,24 +177,24 @@ process_ppp_data <- function(ppp_year) {
   names_y <- paste0(survey_indicators, ".y")
 
   surveys_merged[,
-    (paste0(survey_indicators, "_diff")) := map2(
+    (paste0(survey_indicators, "_diff")) := Map(
+      `-`,
       mget(names_x),
-      mget(names_y),
-      `-`
+      mget(names_y)
     )
   ]
   surveys_merged[,
-    (paste0(survey_indicators, "_perc")) := map2(
+    (paste0(survey_indicators, "_perc")) := Map(
+      function(d, o) d / pmax(abs(o), 1e-9),
       mget(paste0(survey_indicators, "_diff")),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
   surveys_merged[,
-    (paste0(survey_indicators, "_ratio")) := map2(
+    (paste0(survey_indicators, "_ratio")) := Map(
+      function(n, o) n / pmax(abs(o), 1e-9),
       mget(names_x),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
   surveys_merged[,
@@ -150,24 +220,24 @@ process_ppp_data <- function(ppp_year) {
   names_y <- paste0(agg_indicators, ".y")
 
   agg_merged[,
-    (paste0(agg_indicators, "_diff")) := map2(
+    (paste0(agg_indicators, "_diff")) := Map(
+      `-`,
       mget(names_x),
-      mget(names_y),
-      `-`
+      mget(names_y)
     )
   ]
   agg_merged[,
-    (paste0(agg_indicators, "_perc")) := map2(
+    (paste0(agg_indicators, "_perc")) := Map(
+      function(d, o) d / pmax(abs(o), 1e-9),
       mget(paste0(agg_indicators, "_diff")),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
   agg_merged[,
-    (paste0(agg_indicators, "_ratio")) := map2(
+    (paste0(agg_indicators, "_ratio")) := Map(
+      function(n, o) n / pmax(abs(o), 1e-9),
       mget(names_x),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
   agg_merged[, unique_econ := paste0(region_code)]
@@ -196,66 +266,50 @@ process_ppp_data <- function(ppp_year) {
   names_x <- paste0(lineup_indicators, ".x")
   names_y <- paste0(lineup_indicators, ".y")
 
+  # Do NOT floor raw data — apply epsilon guard only inside the denominators
   lineups_merged[,
-    (paste0(names_x)) := lapply(.SD, function(x) pmax(x, 0.000001)),
-    .SDcols = names_x
-  ]
-  lineups_merged[,
-    (paste0(names_y)) := lapply(.SD, function(x) pmax(x, 0.000001)),
-    .SDcols = names_y
-  ]
-
-  lineups_merged[,
-    (paste0(lineup_indicators, "_diff")) := map2(
+    (paste0(lineup_indicators, "_diff")) := Map(
+      `-`,
       mget(names_x),
-      mget(names_y),
-      `-`
+      mget(names_y)
     )
   ]
   lineups_merged[,
-    (paste0(lineup_indicators, "_perc")) := map2(
+    (paste0(lineup_indicators, "_perc")) := Map(
+      function(d, o) d / pmax(abs(o), 1e-9),
       mget(paste0(lineup_indicators, "_diff")),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
   lineups_merged[,
-    (paste0(lineup_indicators, "_ratio")) := map2(
+    (paste0(lineup_indicators, "_ratio")) := Map(
+      function(n, o) n / pmax(abs(o), 1e-9),
       mget(names_x),
-      mget(names_y),
-      `/`
+      mget(names_y)
     )
   ]
 
-  amnt <- 2
+  # Compute both threshold bounds in a single lapply pass to avoid
+  # recomputing quantile(), mean(), and sd() twice per column
+  ZSCORE_MULTIPLIER <- 2L  # ±2 SD band for outlier threshold
   lineups_merged[,
-    (paste0(lineup_indicators, "_thresh_low")) := lapply(.SD, function(x) {
-      mn <- mean(x, na.rm = TRUE, trim = 0.01)
-      s <- sd(
-        x[
-          x > quantile(x, 0.01, na.rm = TRUE) &
-            x < quantile(x, 0.99, na.rm = TRUE)
-        ],
-        na.rm = TRUE
+    c(
+      paste0(lineup_indicators, "_thresh_low"),
+      paste0(lineup_indicators, "_thresh_high")
+    ) := {
+      ratio_cols <- mget(paste0(lineup_indicators, "_ratio"))
+      bounds <- lapply(ratio_cols, function(x) {
+        qs      <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
+        trimmed <- x[x > qs[[1L]] & x < qs[[2L]]]
+        mn <- mean(x, na.rm = TRUE, trim = 0.01)
+        s  <- sd(trimmed, na.rm = TRUE)
+        list(mn - ZSCORE_MULTIPLIER * s, mn + ZSCORE_MULTIPLIER * s)
+      })
+      list(
+        lapply(bounds, `[[`, 1L),
+        lapply(bounds, `[[`, 2L)
       )
-      mn - amnt * s
-    }),
-    .SDcols = paste0(lineup_indicators, "_ratio")
-  ]
-
-  lineups_merged[,
-    (paste0(lineup_indicators, "_thresh_high")) := lapply(.SD, function(x) {
-      mn <- mean(x, na.rm = TRUE, trim = 0.01)
-      s <- sd(
-        x[
-          x > quantile(x, 0.01, na.rm = TRUE) &
-            x < quantile(x, 0.99, na.rm = TRUE)
-        ],
-        na.rm = TRUE
-      )
-      mn + amnt * s
-    }),
-    .SDcols = paste0(lineup_indicators, "_ratio")
+    }
   ]
 
   lineups_merged[,
