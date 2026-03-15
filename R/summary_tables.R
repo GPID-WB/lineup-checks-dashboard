@@ -166,9 +166,9 @@ build_overview_country <- function(
   summary_dt <- dt[
     !is.na(region_code),
     .(
-      n_countries  = data.table::uniqueN(country_code),
-      n_flagged    = sum(flagged, na.rm = TRUE),
-      pct_flagged  = sum(flagged, na.rm = TRUE) / sum(!is.na(flagged))
+      n_countries = data.table::uniqueN(country_code),
+      n_flagged = sum(flagged, na.rm = TRUE),
+      pct_flagged = sum(flagged, na.rm = TRUE) / sum(!is.na(flagged))
     ),
     by = .(region_code, reporting_year)
   ]
@@ -259,8 +259,11 @@ build_driver_table <- function(
   total_pop <- sum(dt$reporting_pop, na.rm = TRUE)
   if (total_pop == 0 || is.na(total_pop)) {
     stop(
-      "All reporting_pop values are NA or zero for region '", region,
-      "' year ", year, ". Cannot compute population weights."
+      "All reporting_pop values are NA or zero for region '",
+      region,
+      "' year ",
+      year,
+      ". Cannot compute population weights."
     )
   }
   dt[,

@@ -16,8 +16,12 @@ fetch_pipr <- function(fn, pl, ppp_year, ...) {
   result <- fn(povline = pl, ppp_version = ppp_year, ...) |> qDT()
   if (nrow(result) == 0L) {
     stop(
-      deparse(substitute(fn)), "() returned 0 rows for ",
-      "povline=", pl, ", ppp_version=", ppp_year
+      deparse(substitute(fn)),
+      "() returned 0 rows for ",
+      "povline=",
+      pl,
+      ", ppp_version=",
+      ppp_year
     )
   }
   result
@@ -29,7 +33,7 @@ ppp_config <- list(
 )
 
 for (ppp_year in names(ppp_config)) {
-  pls      <- ppp_config[[ppp_year]]$pls
+  pls <- ppp_config[[ppp_year]]$pls
   data_dir <- file.path("data", ppp_year)
   dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -78,11 +82,10 @@ for (ppp_year in names(ppp_config)) {
 message("Downloading PFW data...")
 pfw <- pipr::get_aux("survey_means") |> qDT()
 stopifnot(
-  "'year' column missing from pipr::get_aux('survey_means') output" =
-    "year" %in% names(pfw)
+  "'year' column missing from pipr::get_aux('survey_means') output" = "year" %in%
+    names(pfw)
 )
 pfw[, reporting_year := year]
 fst::write_fst(pfw, "data/pfw.fst")
 
 message("All deployment data saved successfully to data/")
-

@@ -35,9 +35,9 @@ harmonize_old_cols <- function(dt) {
     stop("`dt` must be a data.table, got ", class(dt)[[1L]])
   }
   col_map <- c(
-    gdp  = "reporting_gdp",
+    gdp = "reporting_gdp",
     hfce = "reporting_pce",
-    pop  = "reporting_pop"
+    pop = "reporting_pop"
   )
   existing <- intersect(names(col_map), names(dt))
   if (length(existing) > 0L) {
@@ -76,13 +76,11 @@ add_diff_cols <- function(dt, vars, epsilon = 1e-9) {
   names_y <- paste0(vars, ".y")
 
   # absolute difference: new - old
-  dt[
-    ,
+  dt[,
     (paste0(vars, "_diff")) := Map(`-`, mget(names_x), mget(names_y))
   ]
   # relative difference: (new - old) / |old|  (epsilon guard; NaN-safe)
-  dt[
-    ,
+  dt[,
     (paste0(vars, "_perc")) := Map(
       function(d, o) {
         o_safe <- ifelse(is.nan(o), NA_real_, o)
@@ -93,8 +91,7 @@ add_diff_cols <- function(dt, vars, epsilon = 1e-9) {
     )
   ]
   # ratio: new / old  (epsilon guard; NaN-safe)
-  dt[
-    ,
+  dt[,
     (paste0(vars, "_ratio")) := Map(
       function(n, o) {
         o_safe <- ifelse(is.nan(o), NA_real_, o)
@@ -180,17 +177,23 @@ detect_survey_coverage_changes <- function(dt_survey_new, dt_survey_old) {
   missing_new <- setdiff(keys, names(dt_survey_new))
   missing_old <- setdiff(keys, names(dt_survey_old))
   if (length(missing_new) > 0L) {
-    stop("dt_survey_new missing key columns: ", paste(missing_new, collapse = ", "))
+    stop(
+      "dt_survey_new missing key columns: ",
+      paste(missing_new, collapse = ", ")
+    )
   }
   if (length(missing_old) > 0L) {
-    stop("dt_survey_old missing key columns: ", paste(missing_old, collapse = ", "))
+    stop(
+      "dt_survey_old missing key columns: ",
+      paste(missing_old, collapse = ", ")
+    )
   }
 
   # Deduplicate first to avoid materialising a full copy before unique()
   new_keys <- unique(dt_survey_new, by = keys)[, .SD, .SDcols = keys]
   old_keys <- unique(dt_survey_old, by = keys)[, .SD, .SDcols = keys]
 
-  added   <- fsetdiff(new_keys, old_keys)[, change := "added"]
+  added <- fsetdiff(new_keys, old_keys)[, change := "added"]
   dropped <- fsetdiff(old_keys, new_keys)[, change := "dropped"]
 
   return(rbindlist(list(added, dropped)))
@@ -282,17 +285,28 @@ process_ppp_data_extended <- function(ppp_year, data_dir = "data") {
   # Indicators: the outcome variables we're comparing
   # Enumerate explicitly to avoid positional range selection breaking on schema changes
   EXPECTED_INDICATORS <- c(
-    "headcount", "poverty_gap", "poverty_severity", "watts",
-    "mean", "median", "mld", "gini", "polarization",
-    paste0("decile", 1:10), "spl", "spr"
+    "headcount",
+    "poverty_gap",
+    "poverty_severity",
+    "watts",
+    "mean",
+    "median",
+    "mld",
+    "gini",
+    "polarization",
+    paste0("decile", 1:10),
+    "spl",
+    "spr"
   )
   survey_indicators <- intersect(EXPECTED_INDICATORS, names(dt_survey_new))
   lineup_indicators <- intersect(EXPECTED_INDICATORS, names(dt_lineup_new))
-  agg_indicators    <- intersect(EXPECTED_INDICATORS, names(dt_agg_new))
+  agg_indicators <- intersect(EXPECTED_INDICATORS, names(dt_agg_new))
 
   if (length(survey_indicators) == 0L) {
-    stop("No expected indicator columns found in dt_survey_new. ",
-         "Check that syears.fst contains standard PIP indicator columns.")
+    stop(
+      "No expected indicator columns found in dt_survey_new. ",
+      "Check that syears.fst contains standard PIP indicator columns."
+    )
   }
 
   # Explanatory variables (continuous): compute diff/perc/ratio

@@ -7,6 +7,18 @@ source(here::here("R", "process_data.R"))
 # harmonize_old_cols()
 # ---------------------------------------------------------------------------
 
+# harmonize_old_cols type guard
+test_that("harmonize_old_cols errors on non-data.table input", {
+  df <- data.frame(gdp = 100, headcount = 0.3)
+  expect_error(harmonize_old_cols(df), class = "simpleError")
+})
+
+test_that("harmonize_old_cols handles empty data.table", {
+  dt <- data.table(gdp = numeric(0), headcount = numeric(0))
+  expect_no_error(harmonize_old_cols(dt))
+  expect_true("reporting_gdp" %in% names(dt))
+})
+
 test_that("harmonize_old_cols renames gdp, hfce, pop correctly", {
   dt <- data.table(
     gdp = 100,
@@ -122,15 +134,6 @@ test_that("add_categorical_change_cols flags one-sided NA as changed", {
 # detect_survey_coverage_changes()
 # ---------------------------------------------------------------------------
 
-make_survey <- function(country_codes, years) {
-  data.table(
-    country_code = rep(country_codes, each = length(years)),
-    reporting_year = rep(years, times = length(country_codes)),
-    reporting_level = "national",
-    welfare_type = "consumption"
-  )
-}
-
 test_that("detect_survey_coverage_changes returns added and dropped", {
   new_dt <- make_survey(c("ARG", "BRA", "CHL"), 2010:2012)
   old_dt <- make_survey(c("ARG", "BRA"), 2010:2012)
@@ -151,6 +154,26 @@ test_that("detect_survey_coverage_changes detects dropped surveys", {
   old_dt <- make_survey(c("ARG", "BRA"), 2010)
   result <- detect_survey_coverage_changes(new_dt, old_dt)
   expect_true("BRA" %in% result[change == "dropped"]$country_code)
+})
+
+test_that("detect_survey_coverage_changes errors when key columns are missing", {
+  bad_dt <- data.table(country_code = "ARG", reporting_year = 2010)
+  good_dt <- make_survey("ARG", 2010)
+  expect_error(
+    detect_survey_coverage_changes(bad_dt, good_dt),
+    regexp = "missing key columns"
+  )
+})
+
+test_that("detect_survey_coverage_changes deduplicates before comparison", {
+  # Duplicate rows in new should not produce spurious 'added' entries
+  new_dt <- rbindlist(list(
+    make_survey("ARG", 2010),
+    make_survey("ARG", 2010)
+  ))
+  old_dt <- make_survey("ARG", 2010)
+  result <- detect_survey_coverage_changes(new_dt, old_dt)
+  expect_equal(nrow(result), 0L)
 })
 
 # ---------------------------------------------------------------------------

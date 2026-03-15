@@ -10,7 +10,7 @@ source(here::here("R", "utils.R"))
 test_that("load_from_repo errors on invalid ppp_year argument", {
   expect_error(
     load_from_repo("aggregates.fst", ppp_year = "2000"),
-    regexp = "arg"  # match.arg error message
+    regexp = "arg" # match.arg error message
   )
 })
 
@@ -19,7 +19,7 @@ test_that("load_from_repo errors with informative message on HTTP failure", {
   # Use a valid year but a filename that doesn't exist on GitHub
   expect_error(
     load_from_repo("nonexistent_file.fst", ppp_year = "2021"),
-    regexp = "404|download"  # httr::stop_for_status message
+    regexp = "404|download" # httr::stop_for_status message
   )
 })
 

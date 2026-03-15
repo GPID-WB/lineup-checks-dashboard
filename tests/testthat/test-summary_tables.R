@@ -5,67 +5,6 @@ source(here::here("R", "change_detection.R"))
 source(here::here("R", "summary_tables.R"))
 
 # ---------------------------------------------------------------------------
-# Synthetic test data helpers
-# ---------------------------------------------------------------------------
-
-make_agg_merged <- function() {
-  data.table(
-    region_code = c("EAP", "EAP", "SAR", "SAR", "WLD", "WLD"),
-    reporting_year = c(2018, 2019, 2018, 2019, 2018, 2019),
-    poverty_line = 3,
-    # New version values (.x)
-    headcount.x = c(0.30, 0.28, 0.50, 0.48, 0.40, 0.38),
-    headcount.y = c(0.25, 0.25, 0.45, 0.45, 0.36, 0.36),
-    headcount_diff = c(0.05, 0.03, 0.05, 0.03, 0.04, 0.02),
-    headcount_perc = c(0.20, 0.12, 0.11, 0.067, 0.11, 0.055),
-    mean.x = c(10, 11, 5, 5.5, 7.5, 8),
-    mean.y = c(10, 10, 5, 5, 7, 7.5),
-    mean_diff = c(0, 1, 0, 0.5, 0.5, 0.5),
-    mean_perc = c(0, 0.1, 0, 0.1, 0.07, 0.07),
-    .joyn = "x & y"
-  )
-}
-
-make_lineups_merged <- function() {
-  data.table(
-    country_code = c("CHN", "CHN", "IND", "IND", "BRA", "BRA"),
-    region_code.x = c("EAP", "EAP", "SAR", "SAR", "LAC", "LAC"),
-    country_name.x = c("China", "China", "India", "India", "Brazil", "Brazil"),
-    reporting_year = c(2018, 2019, 2018, 2019, 2018, 2019),
-    poverty_line = 3,
-    headcount.x = c(0.20, 0.18, 0.40, 0.38, 0.10, 0.09),
-    headcount.y = c(0.15, 0.15, 0.36, 0.36, 0.10, 0.10),
-    headcount_diff = c(0.05, 0.03, 0.04, 0.02, 0.00, -0.01),
-    headcount_perc = c(0.33, 0.20, 0.11, 0.056, 0, -0.10),
-    reporting_pop.x = c(1.4e9, 1.4e9, 1.3e9, 1.3e9, 2e8, 2e8),
-    reporting_gdp.x = c(8000, 8500, 2000, 2100, 15000, 15500),
-    reporting_gdp.y = c(7500, 7500, 1900, 2000, 15000, 15000),
-    reporting_gdp_diff = c(500, 1000, 100, 100, 0, 500),
-    cpi.x = c(1.0, 1.05, 1.0, 1.02, 1.0, 1.0),
-    cpi.y = c(1.0, 1.00, 1.0, 1.00, 1.0, 1.0),
-    cpi_diff = c(0, 0.05, 0, 0.02, 0, 0),
-    welfare_type.x = c(
-      "consumption",
-      "consumption",
-      "consumption",
-      "consumption",
-      "income",
-      "income"
-    ),
-    welfare_type.y = c(
-      "consumption",
-      "consumption",
-      "consumption",
-      "income",
-      "income",
-      "income"
-    ),
-    welfare_type_changed = c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE),
-    .joyn = "x & y"
-  )
-}
-
-# ---------------------------------------------------------------------------
 # build_overview_agg()
 # ---------------------------------------------------------------------------
 
@@ -253,4 +192,39 @@ test_that("build_source_table returns empty for unknown country", {
   dt <- make_lineups_merged()
   result <- build_source_table(dt, "ZZZ", poverty_line = 3)
   expect_equal(nrow(result), 0L)
+})
+
+# ---------------------------------------------------------------------------
+# Edge cases: data quality guards
+# ---------------------------------------------------------------------------
+
+test_that("build_overview_country pct_flagged excludes NA-flagged rows from denominator", {
+  # Mix matched and unmatched rows (flagged = NA for unmatched)
+  dt <- data.table::copy(make_lineups_merged())
+  # Force one headcount.x to NA to simulate unmatched row
+  dt[country_code == "BRA" & reporting_year == 2018, headcount.x := NA_real_]
+  result <- build_overview_country(dt, "headcount", poverty_line = 3)
+  # pct_flagged should not include the NA row in denominator
+  expect_true(all(
+    result$pct_flagged >= 0 & result$pct_flagged <= 1,
+    na.rm = TRUE
+  ))
+})
+
+test_that("build_driver_table errors when all reporting_pop are zero or NA", {
+  dt <- data.table::copy(make_lineups_merged())
+  dt[region_code == "EAP", reporting_pop.x := NA_real_]
+  expect_error(
+    build_driver_table(dt, "EAP", 2018, poverty_line = 3),
+    regexp = "reporting_pop"
+  )
+})
+
+test_that("build_driver_table errors when reporting_pop.x column is absent", {
+  dt <- data.table::copy(make_lineups_merged())
+  dt[, reporting_pop.x := NULL]
+  expect_error(
+    build_driver_table(dt, "EAP", 2018, poverty_line = 3),
+    regexp = "reporting_pop.x"
+  )
 })

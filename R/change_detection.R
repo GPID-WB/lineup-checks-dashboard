@@ -8,10 +8,10 @@
 # ============================================================
 
 # Default thresholds — used when callers do not supply values
-DEFAULT_REL_THRESH <- 0.05  # 5% relative change
-DEFAULT_ABS_FLOOR  <- 0.005 # minimum absolute change required
-DEFAULT_ABS_THRESH <- 0.01  # absolute threshold (method = "absolute")
-DEFAULT_Z_THRESH   <- 2.0   # z-score threshold (method = "zscore")
+DEFAULT_REL_THRESH <- 0.05 # 5% relative change
+DEFAULT_ABS_FLOOR <- 0.005 # minimum absolute change required
+DEFAULT_ABS_THRESH <- 0.01 # absolute threshold (method = "absolute")
+DEFAULT_Z_THRESH <- 2.0 # z-score threshold (method = "zscore")
 
 
 #' Flag rows by relative difference with an absolute floor
@@ -45,11 +45,14 @@ flag_relative <- function(
   new_val,
   old_val,
   rel_thresh = DEFAULT_REL_THRESH,
-  abs_floor  = DEFAULT_ABS_FLOOR,
-  epsilon    = 1e-9
+  abs_floor = DEFAULT_ABS_FLOOR,
+  epsilon = 1e-9
 ) {
-  stopifnot(is.numeric(new_val), is.numeric(old_val),
-            length(new_val) == length(old_val))
+  stopifnot(
+    is.numeric(new_val),
+    is.numeric(old_val),
+    length(new_val) == length(old_val)
+  )
   abs_diff <- abs(new_val - old_val)
   rel_diff <- abs_diff / pmax(abs(old_val), epsilon)
   return(rel_diff > rel_thresh & abs_diff > abs_floor)
@@ -74,8 +77,11 @@ flag_relative <- function(
 #' @examples
 #' flag_absolute(c(0.12, 10.5, 0.001), c(0.10, 10.0, 0.0009))
 flag_absolute <- function(new_val, old_val, abs_thresh = DEFAULT_ABS_THRESH) {
-  stopifnot(is.numeric(new_val), is.numeric(old_val),
-            length(new_val) == length(old_val))
+  stopifnot(
+    is.numeric(new_val),
+    is.numeric(old_val),
+    length(new_val) == length(old_val)
+  )
   return(abs(new_val - old_val) > abs_thresh)
 }
 
@@ -110,13 +116,16 @@ flag_zscore <- function(
   new_val,
   old_val,
   z_thresh = DEFAULT_Z_THRESH,
-  trim     = 0.01
+  trim = 0.01
 ) {
-  stopifnot(is.numeric(new_val), is.numeric(old_val),
-            length(new_val) == length(old_val))
+  stopifnot(
+    is.numeric(new_val),
+    is.numeric(old_val),
+    length(new_val) == length(old_val)
+  )
   diffs <- new_val - old_val
   # Compute both tail quantiles in a single pass
-  qs      <- quantile(diffs, c(trim, 1 - trim), na.rm = TRUE)
+  qs <- quantile(diffs, c(trim, 1 - trim), na.rm = TRUE)
   trimmed <- diffs[diffs >= qs[[1L]] & diffs <= qs[[2L]]]
 
   mu <- mean(trimmed, na.rm = TRUE)
@@ -161,7 +170,7 @@ flag_zscore <- function(
 flag_changes <- function(
   new_val,
   old_val,
-  method    = c("relative", "absolute", "zscore"),
+  method = c("relative", "absolute", "zscore"),
   threshold = NULL,
   abs_floor = DEFAULT_ABS_FLOOR
 ) {
@@ -212,7 +221,7 @@ flag_changes <- function(
 add_flag_col <- function(
   dt,
   indicator,
-  method    = "relative",
+  method = "relative",
   threshold = NULL,
   abs_floor = DEFAULT_ABS_FLOOR
 ) {
@@ -263,7 +272,7 @@ add_flag_col <- function(
 summarize_flags <- function(
   dt,
   indicators,
-  method    = "relative",
+  method = "relative",
   threshold = NULL,
   abs_floor = DEFAULT_ABS_FLOOR
 ) {

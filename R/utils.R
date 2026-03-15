@@ -22,7 +22,7 @@
 #' }
 load_from_repo <- \(
   filename,
-  ppp_year   = c("2021", "2017"),
+  ppp_year = c("2021", "2017"),
   data_branch = "main"
 ) {
   ppp_year <- as.character(ppp_year)
@@ -30,12 +30,17 @@ load_from_repo <- \(
 
   # GitHub raw content URL — update GH_ORG / GH_REPO if the repo moves
   GH_BASE <- "https://raw.githubusercontent.com"
-  GH_ORG  <- "GPID-WB"
+  GH_ORG <- "GPID-WB"
   GH_REPO <- "pip-sandbox"
 
   org_data <- paste(
-    GH_BASE, GH_ORG, GH_REPO, data_branch,
-    "data", ppp_year, filename,
+    GH_BASE,
+    GH_ORG,
+    GH_REPO,
+    data_branch,
+    "data",
+    ppp_year,
+    filename,
     sep = "/"
   )
 
@@ -291,7 +296,7 @@ process_ppp_data <- function(ppp_year) {
 
   # Compute both threshold bounds in a single lapply pass to avoid
   # recomputing quantile(), mean(), and sd() twice per column
-  ZSCORE_MULTIPLIER <- 2L  # ±2 SD band for outlier threshold
+  ZSCORE_MULTIPLIER <- 2L # ±2 SD band for outlier threshold
   lineups_merged[,
     c(
       paste0(lineup_indicators, "_thresh_low"),
@@ -299,10 +304,10 @@ process_ppp_data <- function(ppp_year) {
     ) := {
       ratio_cols <- mget(paste0(lineup_indicators, "_ratio"))
       bounds <- lapply(ratio_cols, function(x) {
-        qs      <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
+        qs <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
         trimmed <- x[x > qs[[1L]] & x < qs[[2L]]]
         mn <- mean(x, na.rm = TRUE, trim = 0.01)
-        s  <- sd(trimmed, na.rm = TRUE)
+        s <- sd(trimmed, na.rm = TRUE)
         list(mn - ZSCORE_MULTIPLIER * s, mn + ZSCORE_MULTIPLIER * s)
       })
       list(

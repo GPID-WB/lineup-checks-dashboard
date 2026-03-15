@@ -200,3 +200,37 @@ test_that("summarize_flags pct_flagged is in [0, 1]", {
     na.rm = TRUE
   ))
 })
+
+# ---------------------------------------------------------------------------
+# Edge cases added by review
+# ---------------------------------------------------------------------------
+
+test_that("flag_zscore does not produce false positives with near-zero SD", {
+  # All diffs are nearly identical (floating-point noise only)
+  new_v <- rep(0.1, 50) + rnorm(50, 0, 1e-15)
+  old_v <- rep(0.1, 50)
+  result <- flag_zscore(new_v, old_v, z_thresh = 2.0)
+  # Near-zero SD should trigger the guard and return all FALSE
+  expect_true(all(result == FALSE))
+})
+
+test_that("flag_relative errors when vectors have different lengths", {
+  expect_error(flag_relative(c(1, 2), c(1, 2, 3)))
+})
+
+test_that("flag_absolute errors when vectors have different lengths", {
+  expect_error(flag_absolute(c(1, 2), c(1, 2, 3)))
+})
+
+test_that("flag_zscore errors when vectors have different lengths", {
+  expect_error(flag_zscore(c(1, 2), c(1, 2, 3)))
+})
+
+test_that("flag_relative errors on non-numeric input", {
+  expect_error(flag_relative("a", "b"))
+})
+
+test_that("flag_zscore returns all FALSE when all diffs are identical (constant vector)", {
+  result <- flag_zscore(rep(0.5, 20), rep(0.5, 20))
+  expect_true(all(result == FALSE))
+})
