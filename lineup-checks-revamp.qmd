@@ -1,8 +1,10 @@
 ---
 title: "Lineup Checks Dashboard — PIP Data Revisions"
-format: dashboard
+format:
+  dashboard:
+    theme: yeti
+    css: styles.css
 server: shiny
-theme: yeti
 ---
 
 ```{r}
@@ -241,11 +243,13 @@ country_choices <- reactive({
 })
 
 output$country_selector_ui <- shiny::renderUI({
+  choices <- country_choices()
+  default <- if ("COL" %in% choices) "COL" else choices[1]
   shiny::selectInput(
     "country_filter",
     label = "Country:",
-    choices = country_choices(),
-    selected = country_choices()[1]
+    choices = choices,
+    selected = default
   )
 })
 
@@ -819,6 +823,7 @@ output$tbl_driver <- DT::renderDT({
   dt <- lm_sub[
     !is.na(country_code),
     .(
+      region_code = get(region_col),
       country_code,
       reporting_year,
       new_val = get(ind_x),
@@ -856,7 +861,9 @@ output$tbl_driver <- DT::renderDT({
       paste0(input$indicator, "_diff")
     )
   )
-  dt <- dt[order(-abs(weighted_contribution))]
+  dt[, .abs_wc := abs(weighted_contribution)]
+  data.table::setorder(dt, region_code, -.abs_wc)
+  dt[, .abs_wc := NULL]
 
   # Remove columns where old indicator is entirely NA
   old_col <- paste0(input$indicator, "_old")
@@ -914,15 +921,15 @@ output$plot_agg_bars <- plotly::renderPlotly({
   ind_y <- paste0(input$indicator, ".y")
   agg_latest <- data.table::copy(agg_latest)
   agg_latest[, change_val := get(ind_x) - get(ind_y)]
+  agg_latest[, direction := fifelse(change_val > 0, "Positive", "Negative")]
 
   p <- ggplot2::ggplot(
     agg_latest,
     ggplot2::aes(x = reorder(region_code, -abs(change_val)), y = change_val)
   ) +
-    ggplot2::geom_col(ggplot2::aes(fill = change_val > 0), width = 0.7) +
+    ggplot2::geom_col(ggplot2::aes(fill = direction), width = 0.7) +
     ggplot2::scale_fill_manual(
-      values = c("TRUE" = "#06A77D", "FALSE" = "#D62828"),
-      labels = c("TRUE" = "Increase", "FALSE" = "Decrease")
+      values = c("Positive" = "#06A77D", "Negative" = "#D62828")
     ) +
     ggplot2::coord_flip() +
     ggplot2::labs(
@@ -1219,11 +1226,13 @@ output$plot_country_aux <- plotly::renderPlotly({
 
 # Country table selector UI
 output$country_selector_tbl_ui <- shiny::renderUI({
+  choices <- country_choices()
+  default <- if ("COL" %in% choices) "COL" else choices[1]
   shiny::selectInput(
     "country_filter_tbl",
     label = "Country:",
-    choices = country_choices(),
-    selected = country_choices()[1]
+    choices = choices,
+    selected = default
   )
 })
 
@@ -1493,35 +1502,41 @@ DT::DTOutput("tbl_flagged_surveys") |>
 
 # Aggregates Detail {scrolling="true"}
 
-## Row {height="80px"}
+## Row {height="120px"}
 
 ### {width="30%"}
 ```{r}
 #| label: toolbar-aggregates-region
-shiny::selectInput(
-  "region_filter",
-  label = "Region:",
-  choices = c(
-    "All",
-    "AFE",
-    "AFW",
-    "EAS",
-    "ECS",
-    "LAC",
-    "MNA",
-    "SAR",
-    "SSA",
-    "WLD"
-  ),
-  selected = "All",
-  width = "100%"
+htmltools::div(
+  class = "inline-inputs",
+  shiny::selectInput(
+    "region_filter",
+    label = "Region:",
+    choices = c(
+      "All",
+      "AFE",
+      "AFW",
+      "EAS",
+      "ECS",
+      "LAC",
+      "MNA",
+      "SAR",
+      "SSA",
+      "WLD"
+    ),
+    selected = "All",
+    width = "100%"
+  )
 )
 ```
 
 ### {width="70%"}
 ```{r}
 #| label: toolbar-aggregates-year
-shiny::uiOutput("year_range_agg_ui")
+htmltools::div(
+  class = "inline-inputs",
+  shiny::uiOutput("year_range_agg_ui")
+)
 ```
 
 ## Row {.tabset}
@@ -1535,6 +1550,9 @@ shiny::uiOutput("plot_agg_ts_container") |>
 ```
 
 ### Regional Comparison
+
+The data displayed corresponds to the **most recent year** in the selected
+year range.
 
 ```{r}
 plotly::plotlyOutput("plot_agg_bars", height = "500px") |>
