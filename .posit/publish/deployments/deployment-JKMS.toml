@@ -5,19 +5,21 @@ server_url = 'https://w0lxdshyprd1c01.worldbank.org'
 client_version = '1.35.4'
 created_at = ''
 dismissed_at = ''
-type = 'rmd-shiny'
-configuration_name = 'pip compare-GROU'
-id = 'd5dc95e6-506c-469d-af26-cf1ecb748897'
-dashboard_url = 'https://w0lxdshyprd1c01.worldbank.org/connect/#/apps/d5dc95e6-506c-469d-af26-cf1ecb748897'
-direct_url = 'https://w0lxdshyprd1c01.worldbank.org/content/d5dc95e6-506c-469d-af26-cf1ecb748897/'
-logs_url = 'https://w0lxdshyprd1c01.worldbank.org/connect/#/apps/d5dc95e6-506c-469d-af26-cf1ecb748897/logs'
-deployed_at = '2026-03-12T19:34:12-04:00'
-bundle_id = '1978'
-bundle_url = 'https://w0lxdshyprd1c01.worldbank.org/__api__/v1/content/d5dc95e6-506c-469d-af26-cf1ecb748897/bundles/1978/download'
+type = 'quarto-static'
+configuration_name = 'PIP data comparison-8AFF'
+id = 'ee0f381f-a6f9-4038-ab7c-abd57eeb3bc8'
+dashboard_url = 'https://w0lxdshyprd1c01.worldbank.org/connect/#/apps/ee0f381f-a6f9-4038-ab7c-abd57eeb3bc8'
+direct_url = 'https://w0lxdshyprd1c01.worldbank.org/content/ee0f381f-a6f9-4038-ab7c-abd57eeb3bc8/'
+logs_url = 'https://w0lxdshyprd1c01.worldbank.org/connect/#/apps/ee0f381f-a6f9-4038-ab7c-abd57eeb3bc8/logs'
+deployed_at = '2026-03-16T07:06:23-04:00'
+bundle_id = '1990'
+bundle_url = 'https://w0lxdshyprd1c01.worldbank.org/__api__/v1/content/ee0f381f-a6f9-4038-ab7c-abd57eeb3bc8/bundles/1990/download'
 files = [
-  '.posit/publish/deployments/deployment-8RO3.toml',
-  '.posit/publish/pip compare-GROU.toml',
-  'R/utils.R',
+  '.posit/publish/PIP data comparison-8AFF.toml',
+  '.posit/publish/deployments/deployment-JKMS.toml',
+  'R/change_detection.R',
+  'R/process_data.R',
+  'R/summary_tables.R',
   'data/2017/aggregates.fst',
   'data/2017/dt_agg_old.fst',
   'data/2017/dt_lineup_old.fst',
@@ -31,29 +33,43 @@ files = [
   'data/2021/lyears.fst',
   'data/2021/syears.fst',
   'data/pfw.fst',
-  'lineup-checks-dashboard.Rmd',
-  'renv.lock'
+  'lineup-checks-revamp.qmd',
+  'renv.lock',
+  'styles.css'
 ]
+
+[deployment_error]
+code = 'deployFailed'
+message = 'Rendering exited abnormally: process exited with code 1: exit status 1.'
+operation = 'publish/runContent'
 
 [configuration]
 product_type = 'connect'
 '$schema' = 'https://cdn.posit.co/publisher/schemas/posit-publishing-schema-v3.json'
-type = 'rmd-shiny'
-entrypoint = 'lineup-checks-dashboard.Rmd'
+type = 'quarto-static'
+entrypoint = 'lineup-checks-revamp.qmd'
 validate = true
 files = [
-  '/lineup-checks-dashboard.Rmd',
-  '/.posit/publish/pip compare-GROU.toml',
-  '/.posit/publish/deployments/deployment-8RO3.toml',
+  '/lineup-checks-revamp.qmd',
+  '/renv.lock',
+  '/.posit/publish/PIP data comparison-8AFF.toml',
+  '/.posit/publish/deployments/deployment-JKMS.toml',
   '/data',
-  '/R/utils.R'
+  '/R',
+  '/styles.css',
+  '!/R/utils.R',
+  '!/R/save_deploy_data.R'
 ]
-title = 'pip compare'
+title = 'PIP data comparison'
 
 [configuration.r]
 version = '4.5.1'
 package_file = 'renv.lock'
 package_manager = 'renv'
+
+[configuration.quarto]
+version = '1.8.26'
+engines = ['knitr']
 
 [renv]
 [renv.r]
@@ -64,6 +80,28 @@ name = 'CRAN'
 url = 'https://cloud.r-project.org'
 
 [renv.packages]
+[renv.packages.DT]
+package = 'DT'
+version = '0.33'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+type = 'Package'
+title = "A Wrapper of the JavaScript Library 'DataTables'"
+'authors@r' = 'c( person("Yihui", "Xie", role = "aut"), person("Joe", "Cheng", email = "joe@posit.co", role = c("aut", "cre")), person("Xianying", "Tan", role = "aut"), person("JJ", "Allaire", role = "ctb"), person("Maximilian", "Girlich", role = "ctb"), person("Greg", "Freedman Ellis", role = "ctb"), person("Johannes", "Rauh", role = "ctb"), person("SpryMedia Limited", role = c("ctb", "cph"), comment = "DataTables in htmlwidgets/lib"), person("Brian", "Reavis", role = c("ctb", "cph"), comment = "selectize.js in htmlwidgets/lib"), person("Leon", "Gersen", role = c("ctb", "cph"), comment = "noUiSlider in htmlwidgets/lib"), person("Bartek", "Szopka", role = c("ctb", "cph"), comment = "jquery.highlight.js in htmlwidgets/lib"), person("Alex", "Pickering", role = c("ctb")), person("William", "Holmes", role = c("ctb")), person("Mikko", "Marttila", role = c("ctb")), person("Andres", "Quintero", role = c("ctb")), person("Stéphane", "Laurent", role = c("ctb")), person(given = "Posit Software, PBC", role = c("cph", "fnd")) )'
+maintainer = 'Joe Cheng <joe@posit.co>'
+description = "Data objects in R can be rendered as HTML tables using the JavaScript library 'DataTables' (typically via R Markdown or Shiny). The 'DataTables' library has been included in this R package. The package name 'DT' is an abbreviation of 'DataTables'."
+url = 'https://github.com/rstudio/DT'
+bugreports = 'https://github.com/rstudio/DT/issues'
+license = 'GPL-3 | file LICENSE'
+imports = ['htmltools (>= 0.3.6)', 'htmlwidgets (>= 1.3)', 'httpuv', 'jsonlite (>= 0.9.16)', 'magrittr', 'crosstalk', 'jquerylib', 'promises']
+suggests = ['knitr (>= 1.8)', 'rmarkdown', 'shiny (>= 1.6)', 'bslib', 'future', 'testit', 'tibble']
+vignettebuilder = 'knitr'
+roxygennote = '7.3.1'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Yihui Xie [aut], Joe Cheng [aut, cre], Xianying Tan [aut], JJ Allaire [ctb], Maximilian Girlich [ctb], Greg Freedman Ellis [ctb], Johannes Rauh [ctb], SpryMedia Limited [ctb, cph] (DataTables in htmlwidgets/lib), Brian Reavis [ctb, cph] (selectize.js in htmlwidgets/lib), Leon Gersen [ctb, cph] (noUiSlider in htmlwidgets/lib), Bartek Szopka [ctb, cph] (jquery.highlight.js in htmlwidgets/lib), Alex Pickering [ctb], William Holmes [ctb], Mikko Marttila [ctb], Andres Quintero [ctb], Stéphane Laurent [ctb], Posit Software, PBC [cph, fnd]'
+
 [renv.packages.KernSmooth]
 package = 'KernSmooth'
 version = '2.23-26'
@@ -175,6 +213,30 @@ encoding = 'UTF-8'
 needscompilation = 'yes'
 author = 'Dirk Eddelbuettel [aut, cre] (ORCID: <https://orcid.org/0000-0001-6419-907X>), Romain Francois [aut] (ORCID: <https://orcid.org/0000-0002-2444-4226>), JJ Allaire [aut] (ORCID: <https://orcid.org/0000-0003-0174-9868>), Kevin Ushey [aut] (ORCID: <https://orcid.org/0000-0003-2880-7407>), Qiang Kou [aut] (ORCID: <https://orcid.org/0000-0001-6786-5453>), Nathan Russell [aut], Iñaki Ucar [aut] (ORCID: <https://orcid.org/0000-0001-6403-5550>), Doug Bates [aut] (ORCID: <https://orcid.org/0000-0001-8316-9503>), John Chambers [aut]'
 
+[renv.packages.arrow]
+package = 'arrow'
+version = '21.0.0.1'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 4.0)']
+hash = ''
+title = "Integration to 'Apache' 'Arrow'"
+'authors@r' = 'c( person("Neal", "Richardson", email = "neal.p.richardson@gmail.com", role = c("aut")), person("Ian", "Cook", email = "ianmcook@gmail.com", role = c("aut")), person("Nic", "Crane", email = "thisisnic@gmail.com", role = c("aut")), person("Dewey", "Dunnington", role = c("aut"), email = "dewey@fishandwhistle.net", comment = c(ORCID = "0000-0002-9415-4582")), person("Romain", "Fran\u00e7ois", role = c("aut"), comment = c(ORCID = "0000-0002-2444-4226")), person("Jonathan", "Keane", email = "jkeane@gmail.com", role = c("aut", "cre")), person("Drago\u0219", "Moldovan-Gr\u00fcnfeld", email = "dragos.mold@gmail.com", role = c("aut")), person("Jeroen", "Ooms", email = "jeroen@berkeley.edu", role = c("aut")), person("Jacob", "Wujciak-Jens", email = "jacob@wujciak.de", role = c("aut")), person("Javier", "Luraschi", email = "javier@rstudio.com", role = c("ctb")), person("Karl", "Dunkle Werner", email = "karldw@users.noreply.github.com", role = c("ctb"), comment = c(ORCID = "0000-0003-0523-7309")), person("Jeffrey", "Wong", email = "jeffreyw@netflix.com", role = c("ctb")), person("Apache Arrow", email = "dev@arrow.apache.org", role = c("aut", "cph")) )'
+maintainer = 'Jonathan Keane <jkeane@gmail.com>'
+description = "'Apache' 'Arrow' <https://arrow.apache.org/> is a cross-language development platform for in-memory data. It specifies a standardized language-independent columnar memory format for flat and hierarchical data, organized for efficient analytic operations on modern hardware. This package provides an interface to the 'Arrow C++' library."
+url = 'https://github.com/apache/arrow/, https://arrow.apache.org/docs/r/'
+bugreports = 'https://github.com/apache/arrow/issues'
+license = 'Apache License (>= 2.0)'
+imports = ['assertthat', 'bit64 (>= 0.9-7)', 'glue', 'methods', 'purrr', 'R6', 'rlang (>= 1.0.0)', 'stats', 'tidyselect (>= 1.0.0)', 'utils', 'vctrs']
+suggests = ['blob', 'curl', 'cli', 'DBI', 'dbplyr', 'decor', 'distro', 'dplyr', 'duckdb (>= 0.2.8)', 'hms', 'jsonlite', 'knitr', 'lubridate', 'pillar', 'pkgload', 'reticulate', 'rmarkdown', 'stringi', 'stringr', 'sys', 'testthat (>= 3.1.0)', 'tibble', 'tzdb', 'withr']
+linkingto = ['cpp11 (>= 0.4.2)']
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'yes'
+author = 'Neal Richardson [aut], Ian Cook [aut], Nic Crane [aut], Dewey Dunnington [aut] (ORCID: <https://orcid.org/0000-0002-9415-4582>), Romain François [aut] (ORCID: <https://orcid.org/0000-0002-2444-4226>), Jonathan Keane [aut, cre], Dragoș Moldovan-Grünfeld [aut], Jeroen Ooms [aut], Jacob Wujciak-Jens [aut], Javier Luraschi [ctb], Karl Dunkle Werner [ctb] (ORCID: <https://orcid.org/0000-0003-0523-7309>), Jeffrey Wong [ctb], Apache Arrow [aut, cph]'
+'config/testthat/edition' = '3'
+systemrequirements = 'C++17; for AWS S3 support on Linux, libcurl and openssl (optional); cmake >= 3.25 (build-time only, and only for full source build)'
+
 [renv.packages.askpass]
 package = 'askpass'
 version = '1.2.1'
@@ -196,6 +258,43 @@ encoding = 'UTF-8'
 needscompilation = 'yes'
 author = 'Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>)'
 
+[renv.packages.assertthat]
+package = 'assertthat'
+version = '0.2.1'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+title = 'Easy Pre and Post Assertions'
+'authors@r' = 'person("Hadley", "Wickham", , "hadley@rstudio.com", c("aut", "cre"))'
+maintainer = 'Hadley Wickham <hadley@rstudio.com>'
+description = "An extension to stopifnot() that makes it easy to declare  the pre and post conditions that you code should satisfy, while also  producing friendly error messages so that your users know what's gone wrong."
+license = 'GPL-3'
+imports = ['tools']
+suggests = ['testthat', 'covr']
+roxygennote = '6.0.1'
+needscompilation = 'no'
+author = 'Hadley Wickham [aut, cre]'
+
+[renv.packages.attempt]
+package = 'attempt'
+version = '0.3.1'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+title = 'Tools for Defensive Programming'
+'authors@r' = 'person("Colin", "Fay", email = "contact@colinfay.me", role = c("aut", "cre"), comment=c(ORCID="0000-0001-7343-1846"))'
+maintainer = 'Colin Fay <contact@colinfay.me>'
+description = "Tools for defensive programming, inspired by 'purrr' mappers and  based on 'rlang'.'attempt' extends and facilitates defensive programming by  providing a consistent grammar, and provides a set of easy to use functions  for common tests and conditions. 'attempt' only depends on 'rlang', and  focuses on speed, so it can be easily integrated in other functions and  used in data analysis."
+url = 'https://github.com/ColinFay/attempt'
+license = 'MIT + file LICENSE'
+imports = ['rlang']
+suggests = ['testthat', 'knitr', 'rmarkdown', 'curl']
+vignettebuilder = 'knitr'
+roxygennote = '7.1.0'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Colin Fay [aut, cre] (<https://orcid.org/0000-0001-7343-1846>)'
+
 [renv.packages.base64enc]
 package = 'base64enc'
 version = '0.1-3'
@@ -210,6 +309,48 @@ url = 'http://www.rforge.net/base64enc'
 license = 'GPL-2 | GPL-3'
 needscompilation = 'yes'
 author = 'Simon Urbanek <Simon.Urbanek@r-project.org>'
+
+[renv.packages.bit]
+package = 'bit'
+version = '4.6.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.4.0)']
+hash = ''
+title = 'Classes and Methods for Fast Memory-Efficient Boolean Selections'
+'authors@r' = 'c( person("Michael", "Chirico", email = "MichaelChirico4@gmail.com", role = c("aut", "cre")), person("Jens", "Oehlschlägel", role = "aut"), person("Brian", "Ripley", role = "ctb") )'
+maintainer = 'Michael Chirico <MichaelChirico4@gmail.com>'
+description = 'Provided are classes for boolean and skewed boolean vectors, fast boolean methods, fast unique and non-unique integer sorting, fast set operations on sorted and unsorted sets of integers, and foundations for ff (range index, compression, chunked processing).'
+url = 'https://github.com/r-lib/bit'
+license = 'GPL-2 | GPL-3'
+suggests = ['testthat (>= 3.0.0)', 'roxygen2', 'knitr', 'markdown', 'rmarkdown', 'microbenchmark', 'bit64 (>= 4.0.0)', 'ff (>= 4.0.0)']
+vignettebuilder = 'knitr, rmarkdown'
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'yes'
+author = 'Michael Chirico [aut, cre], Jens Oehlschlägel [aut], Brian Ripley [ctb]'
+'config/testthat/edition' = '3'
+
+[renv.packages.bit64]
+package = 'bit64'
+version = '4.6.0-1'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.4.0)', 'bit (>= 4.0.0)']
+hash = ''
+title = 'A S3 Class for Vectors of 64bit Integers'
+'authors@r' = 'c( person("Michael", "Chirico", email = "michaelchirico4@gmail.com", role = c("aut", "cre")), person("Jens", "Oehlschlägel", role = "aut"), person("Leonardo", "Silvestri", role = "ctb"), person("Ofek", "Shilon", role = "ctb") )'
+maintainer = 'Michael Chirico <michaelchirico4@gmail.com>'
+description = "Package 'bit64' provides serializable S3 atomic 64bit (signed) integers. These are useful for handling database keys and exact counting in +-2^63. WARNING: do not use them as replacement for 32bit integers, integer64 are not supported for subscripting by R-core and they have different semantics when combined with double, e.g. integer64 + double => integer64. Class integer64 can be used in vectors, matrices, arrays and data.frames. Methods are available for coercion from and to logicals, integers, doubles, characters and factors as well as many elementwise and summary functions. Many fast algorithmic operations such as 'match' and 'order' support inter- active data exploration and manipulation and optionally leverage caching."
+url = 'https://github.com/r-lib/bit64'
+license = 'GPL-2 | GPL-3'
+imports = ['graphics', 'methods', 'stats', 'utils']
+suggests = ['testthat (>= 3.0.3)', 'withr']
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'yes'
+author = 'Michael Chirico [aut, cre], Jens Oehlschlägel [aut], Leonardo Silvestri [ctb], Ofek Shilon [ctb]'
+'config/testthat/edition' = '3'
 
 [renv.packages.boot]
 package = 'boot'
@@ -226,6 +367,28 @@ license = 'Unlimited'
 suggests = ['MASS', 'survival']
 needscompilation = 'no'
 author = 'Angelo Canty [aut] (author of original code for S), Brian Ripley [aut, trl] (conversion to R, maintainer 1999--2022, author of parallel support), Alessandra R. Brazzale [ctb, cre] (minor bug fixes)'
+
+[renv.packages.bsicons]
+package = 'bsicons'
+version = '0.1.2'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 2.10)']
+hash = ''
+title = "Easily Work with 'Bootstrap' Icons"
+'authors@r' = 'c( person("Carson", "Sievert", , "carson@posit.co", role = c("cre", "aut"), comment = c(ORCID = "0000-0002-4958-2844")), person("Posit Software, PBC", role = c("cph", "fnd")), person("Mark", "Otto", role = "cph", comment = "Bootstrap icons maintainer") )'
+maintainer = 'Carson Sievert <carson@posit.co>'
+description = "Easily use 'Bootstrap' icons inside 'Shiny' apps and 'R Markdown' documents. More generally, icons can be inserted in any 'htmltools' document through inline 'SVG'."
+url = 'https://github.com/rstudio/bsicons'
+bugreports = 'https://github.com/rstudio/bsicons/issues'
+license = 'MIT + file LICENSE'
+imports = ['cli', 'htmltools', 'rlang', 'utils']
+suggests = ['bslib', 'processx', 'testthat', 'webshot2', 'withr']
+roxygennote = '7.2.3'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Carson Sievert [cre, aut] (<https://orcid.org/0000-0002-4958-2844>), Posit Software, PBC [cph, fnd], Mark Otto [cph] (Bootstrap icons maintainer)'
+'config/testthat/edition' = '3'
 
 [renv.packages.bslib]
 package = 'bslib'
@@ -406,6 +569,27 @@ encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Davis Vaughan [aut, cre] (<https://orcid.org/0000-0003-4777-038X>), Jim Hester [aut] (<https://orcid.org/0000-0002-2739-7082>), Romain François [aut] (<https://orcid.org/0000-0002-2444-4226>), Benjamin Kietzman [ctb], Posit Software, PBC [cph, fnd]'
 'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
+
+[renv.packages.crayon]
+package = 'crayon'
+version = '1.5.3'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+title = 'Colored Terminal Output'
+'authors@r' = 'c( person("Gábor", "Csárdi", , "csardi.gabor@gmail.com", role = c("aut", "cre")), person("Brodie", "Gaslam", , "brodie.gaslam@yahoo.com", role = "ctb"), person("Posit Software, PBC", role = c("cph", "fnd")) )'
+maintainer = 'Gábor Csárdi <csardi.gabor@gmail.com>'
+description = "The crayon package is now superseded. Please use the 'cli' package for new projects.  Colored terminal output on terminals that support 'ANSI' color and highlight codes. It also works in 'Emacs' 'ESS'. 'ANSI' color support is automatically detected. Colors and highlighting can be combined and nested. New styles can also be created easily.  This package was inspired by the 'chalk' 'JavaScript' project."
+url = 'https://r-lib.github.io/crayon/, https://github.com/r-lib/crayon'
+bugreports = 'https://github.com/r-lib/crayon/issues'
+license = 'MIT + file LICENSE'
+imports = ['grDevices', 'methods', 'utils']
+suggests = ['mockery', 'rstudioapi', 'testthat', 'withr']
+roxygennote = '7.3.1'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Gábor Csárdi [aut, cre], Brodie Gaslam [ctb], Posit Software, PBC [cph, fnd]'
 'config/needs/website' = 'tidyverse/tidytemplate'
 
 [renv.packages.crosstalk]
@@ -602,30 +786,6 @@ roxygennote = '7.2.3'
 encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Sebastian Krantz [aut, cre], Hadley Wickham [ctb]'
-
-[renv.packages.flexdashboard]
-package = 'flexdashboard'
-version = '0.6.2'
-source = 'Repository'
-repository = 'CRAN'
-depends = ['R (>= 3.0.2)']
-hash = ''
-type = 'Package'
-title = 'R Markdown Format for Flexible Dashboards'
-'authors@r' = 'c( person("Garrick", "Aden-Buie", , "garrick@posit.co", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7111-0077")), person("Carson", "Sievert", , "carson@posit.co", role = "aut", comment = c(ORCID = "0000-0002-4958-2844")), person("Richard", "Iannone", , "rich@posit.co", role = "aut", comment = c(ORCID = "0000-0003-3925-190X")), person("JJ", "Allaire", , "jj@posit.co", role = "aut"), person("Barbara", "Borges", , "barb.b.ribeiro@gmail.com", role = "aut"), person("Posit Software, PBC", role = c("cph", "fnd")), person(, "Keen IO", role = c("ctb", "cph"), comment = "Dashboard CSS"), person("Abdullah", "Almsaeed", role = c("ctb", "cph"), comment = "Dashboard CSS"), person("Jonas", "Mosbech", role = c("ctb", "cph"), comment = "StickyTableHeaders"), person("Noel", "Bossart", role = c("ctb", "cph"), comment = "Featherlight"), person("Lea", "Verou", role = c("ctb", "cph"), comment = "Prism"), person("Dmitry", "Baranovskiy", role = c("ctb", "cph"), comment = "Raphael.js"), person(, "Sencha Labs", role = c("ctb", "cph"), comment = "Raphael.js"), person("Bojan", "Djuricic", role = c("ctb", "cph"), comment = "JustGage"), person("Tomas", "Sardyha", role = c("ctb", "cph"), comment = "Sly"), person("Bryan", "Lewis", role = c("ctb", "cph"), comment = "Examples"), person("Joshua", "Kunst", role = c("ctb", "cph"), comment = "Examples"), person("Ryan", "Hafen", role = c("ctb", "cph"), comment = "Examples"), person("Bob", "Rudis", role = c("ctb", "cph"), comment = "Examples"), person("Joe", "Cheng", role = "ctb", comment = "Examples") )'
-maintainer = 'Garrick Aden-Buie <garrick@posit.co>'
-description = "Format for converting an R Markdown document to a grid oriented dashboard. The dashboard flexibly adapts the size of it's components to the containing web page."
-url = 'https://pkgs.rstudio.com/flexdashboard/, https://github.com/rstudio/flexdashboard/'
-bugreports = 'https://github.com/rstudio/flexdashboard/issues'
-license = 'MIT + file LICENSE'
-imports = ['bslib (>= 0.2.5)', 'grDevices', 'htmltools (>= 0.5.1)', 'htmlwidgets (>= 0.6)', 'jsonlite', 'knitr (>= 1.30)', 'rmarkdown (>= 2.8)', 'sass', 'scales', 'shiny (>= 0.13)', 'tools', 'utils']
-suggests = ['testthat']
-roxygennote = '7.2.3'
-encoding = 'UTF-8'
-needscompilation = 'no'
-author = 'Garrick Aden-Buie [aut, cre] (<https://orcid.org/0000-0002-7111-0077>), Carson Sievert [aut] (<https://orcid.org/0000-0002-4958-2844>), Richard Iannone [aut] (<https://orcid.org/0000-0003-3925-190X>), JJ Allaire [aut], Barbara Borges [aut], Posit Software, PBC [cph, fnd], Keen IO [ctb, cph] (Dashboard CSS), Abdullah Almsaeed [ctb, cph] (Dashboard CSS), Jonas Mosbech [ctb, cph] (StickyTableHeaders), Noel Bossart [ctb, cph] (Featherlight), Lea Verou [ctb, cph] (Prism), Dmitry Baranovskiy [ctb, cph] (Raphael.js), Sencha Labs [ctb, cph] (Raphael.js), Bojan Djuricic [ctb, cph] (JustGage), Tomas Sardyha [ctb, cph] (Sly), Bryan Lewis [ctb, cph] (Examples), Joshua Kunst [ctb, cph] (Examples), Ryan Hafen [ctb, cph] (Examples), Bob Rudis [ctb, cph] (Examples), Joe Cheng [ctb] (Examples)'
-'config/testthat/edition' = '3'
-'config/needs/website' = 'rstudio/quillt'
 
 [renv.packages.fontawesome]
 package = 'fontawesome'
@@ -836,6 +996,28 @@ author = 'Hadley Wickham [aut], Thomas Lin Pedersen [aut, cre], Posit Software, 
 'config/testthat/edition' = '3'
 'config/needs/website' = 'tidyverse/tidytemplate'
 
+[renv.packages.here]
+package = 'here'
+version = '1.0.1'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+title = 'A Simpler Way to Find Your Files'
+'authors@r' = 'c(person(given = "Kirill", family = "M\u00fcller", role = c("aut", "cre"), email = "krlmlr+r@mailbox.org", comment = c(ORCID = "0000-0002-1416-3412")), person(given = "Jennifer", family = "Bryan", role = "ctb", email = "jenny@rstudio.com", comment = c(ORCID = "0000-0002-6983-2759")))'
+maintainer = 'Kirill Müller <krlmlr+r@mailbox.org>'
+description = "Constructs paths to your project's files. Declare the relative path of a file within your project with 'i_am()'. Use the 'here()' function as a drop-in replacement for 'file.path()', it will always locate the files relative to your project root."
+url = 'https://here.r-lib.org/, https://github.com/r-lib/here'
+bugreports = 'https://github.com/r-lib/here/issues'
+license = 'MIT + file LICENSE'
+imports = ['rprojroot (>= 2.0.2)']
+suggests = ['conflicted', 'covr', 'fs', 'knitr', 'palmerpenguins', 'plyr', 'readr', 'rlang', 'rmarkdown', 'testthat', 'uuid', 'withr']
+vignettebuilder = 'knitr'
+roxygennote = '7.1.1.9000'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>), Jennifer Bryan [ctb] (<https://orcid.org/0000-0002-6983-2759>)'
+'config/testthat/edition' = '3'
+
 [renv.packages.highr]
 package = 'highr'
 version = '0.11'
@@ -858,6 +1040,28 @@ roxygennote = '7.3.1'
 encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>), Yixuan Qiu [aut], Christopher Gandrud [ctb], Qiang Li [ctb]'
+
+[renv.packages.hms]
+package = 'hms'
+version = '1.1.3'
+source = 'Repository'
+repository = 'CRAN'
+hash = ''
+title = 'Pretty Time of Day'
+'authors@r' = 'c( person("Kirill", "Müller", role = c("aut", "cre"), email = "kirill@cynkra.com", comment = c(ORCID = "0000-0002-1416-3412")), person("R Consortium", role = "fnd"), person("RStudio", role = "fnd") )'
+maintainer = 'Kirill Müller <kirill@cynkra.com>'
+description = "Implements an S3 class for storing and formatting time-of-day values, based on the 'difftime' class."
+url = 'https://hms.tidyverse.org/, https://github.com/tidyverse/hms'
+bugreports = 'https://github.com/tidyverse/hms/issues'
+license = 'MIT + file LICENSE'
+imports = ['lifecycle', 'methods', 'pkgconfig', 'rlang (>= 1.0.2)', 'vctrs (>= 0.3.8)']
+suggests = ['crayon', 'lubridate', 'pillar (>= 1.1.0)', 'testthat (>= 3.0.0)']
+roxygennote = '7.2.3'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>), R Consortium [fnd], RStudio [fnd]'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
 
 [renv.packages.htmltools]
 package = 'htmltools'
@@ -951,6 +1155,30 @@ needscompilation = 'no'
 author = 'Hadley Wickham [aut, cre], Posit, PBC [cph, fnd]'
 'config/needs/website' = 'tidyverse/tidytemplate'
 
+[renv.packages.httr2]
+package = 'httr2'
+version = '1.2.1'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 4.1)']
+hash = ''
+title = 'Perform HTTP Requests and Process the Responses'
+'authors@r' = 'c( person("Hadley", "Wickham", , "hadley@posit.co", role = c("aut", "cre")), person("Posit Software, PBC", role = c("cph", "fnd")), person("Maximilian", "Girlich", role = "ctb") )'
+maintainer = 'Hadley Wickham <hadley@posit.co>'
+description = "Tools for creating and modifying HTTP requests, then performing them and processing the results. 'httr2' is a modern re-imagining of 'httr' that uses a pipe-based interface and solves more of the problems that API wrapping packages face."
+url = 'https://httr2.r-lib.org, https://github.com/r-lib/httr2'
+bugreports = 'https://github.com/r-lib/httr2/issues'
+license = 'MIT + file LICENSE'
+imports = ['cli (>= 3.0.0)', 'curl (>= 6.4.0)', 'glue', 'lifecycle', 'magrittr', 'openssl', 'R6', 'rappdirs', 'rlang (>= 1.1.0)', 'vctrs (>= 0.6.3)', 'withr']
+suggests = ['askpass', 'bench', 'clipr', 'covr', 'docopt', 'httpuv', 'jose', 'jsonlite', 'knitr', 'later (>= 1.4.0)', 'nanonext', 'paws.common', 'promises', 'rmarkdown', 'testthat (>= 3.1.8)', 'tibble', 'webfakes (>= 1.4.0)', 'xml2']
+vignettebuilder = 'knitr'
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Hadley Wickham [aut, cre], Posit Software, PBC [cph, fnd], Maximilian Girlich [ctb]'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
+
 [renv.packages.isoband]
 package = 'isoband'
 version = '0.2.7'
@@ -977,7 +1205,7 @@ systemrequirements = 'C++11'
 
 [renv.packages.joyn]
 package = 'joyn'
-version = '0.3.0.9000'
+version = '0.3.0'
 source = 'Repository'
 repository = 'CRAN'
 depends = ['R (>= 4.2.0)']
@@ -1345,6 +1573,28 @@ author = 'Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-34
 'config/testthat/edition' = '3'
 'config/needs/website' = 'tidyverse/tidytemplate'
 
+[renv.packages.pipr]
+package = 'pipr'
+version = '1.4.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 4.1.0)']
+hash = ''
+title = "Client for the Poverty and Inequality Platform ('PIP') API"
+'authors@r' = 'c(person(given = "Tony", family = "Fujs", role = c("aut"), email = "tonyfujs@gmail.com"), person(given = "Aleksander", family = "Eilertsen", role = "aut", email = "aeilertsen@worldbank.org"), person(given = "Ronak", family = "Shah", role   =  "aut", email  = "shahronak47@yahoo.in"), person(given = "R.Andrés", family = "Castañeda", role   = c("aut", "cre"), email  = "acastanedaa@worldbank.org"), person(given = "Giorgia", family = "Cecchinato", role   = "aut", email  = "gcecchinato@worldbank.org"), person(given  = "World Bank", role = "cph") )'
+maintainer = 'R.Andrés Castañeda <acastanedaa@worldbank.org>'
+description = "An interface to compute poverty and inequality  indicators for more than 160 countries and regions from the World Bank's database of household surveys, through the  Poverty and Inequality Portal (PIP)."
+url = 'https://worldbank.github.io/pipr/, https://github.com/worldbank/pipr'
+bugreports = 'https://github.com/worldbank/pipr/issues'
+license = 'MIT + file LICENSE'
+imports = ['arrow', 'attempt', 'curl', 'jsonlite', 'tibble', 'purrr', 'cli', 'rlang', 'utils', 'httr2', 'stringr', 'vroom']
+suggests = ['covr', 'testthat (>= 3.0.0)', 'spelling', 'knitr', 'rmarkdown', 'markdown', 'callr', 'ggplot2', 'tidyr', 'ggthemes', 'forcats', 'scales', 'dplyr', 'readr']
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Tony Fujs [aut], Aleksander Eilertsen [aut], Ronak Shah [aut], R.Andrés Castañeda [aut, cre], Giorgia Cecchinato [aut], World Bank [cph]'
+'config/testthat/edition' = '3'
+
 [renv.packages.pkgconfig]
 package = 'pkgconfig'
 version = '2.0.3'
@@ -1383,6 +1633,49 @@ roxygennote = '7.3.2'
 encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Carson Sievert [aut, cre] (ORCID: <https://orcid.org/0000-0002-4958-2844>), Chris Parmer [aut], Toby Hocking [aut], Scott Chamberlain [aut], Karthik Ram [aut], Marianne Corvellec [aut] (ORCID: <https://orcid.org/0000-0002-1994-3581>), Pedro Despouy [aut], Salim Brüggemann [ctb] (ORCID: <https://orcid.org/0000-0002-5329-5987>), Plotly Technologies Inc. [cph]'
+
+[renv.packages.prettyunits]
+package = 'prettyunits'
+version = '1.2.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R(>= 2.10)']
+hash = ''
+title = 'Pretty, Human Readable Formatting of Quantities'
+'authors@r' = 'c( person("Gabor", "Csardi", email="csardi.gabor@gmail.com", role=c("aut", "cre")), person("Bill", "Denney", email="wdenney@humanpredictions.com", role=c("ctb"), comment=c(ORCID="0000-0002-5759-428X")), person("Christophe", "Regouby", email="christophe.regouby@free.fr", role=c("ctb")) )'
+maintainer = 'Gabor Csardi <csardi.gabor@gmail.com>'
+description = "Pretty, human readable formatting of quantities. Time intervals: '1337000' -> '15d 11h 23m 20s'. Vague time intervals: '2674000' -> 'about a month ago'. Bytes: '1337' -> '1.34 kB'. Rounding: '99' with 3 significant digits -> '99.0' p-values: '0.00001' -> '<0.0001'. Colors: '#FF0000' -> 'red'. Quantities: '1239437' -> '1.24 M'."
+url = 'https://github.com/r-lib/prettyunits'
+bugreports = 'https://github.com/r-lib/prettyunits/issues'
+license = 'MIT + file LICENSE'
+suggests = ['codetools', 'covr', 'testthat']
+roxygennote = '7.2.3'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Gabor Csardi [aut, cre], Bill Denney [ctb] (<https://orcid.org/0000-0002-5759-428X>), Christophe Regouby [ctb]'
+
+[renv.packages.progress]
+package = 'progress'
+version = '1.2.3'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.6)']
+hash = ''
+title = 'Terminal Progress Bars'
+'authors@r' = 'c( person("Gábor", "Csárdi", , "csardi.gabor@gmail.com", role = c("aut", "cre")), person("Rich", "FitzJohn", role = "aut"), person("Posit Software, PBC", role = c("cph", "fnd")) )'
+maintainer = 'Gábor Csárdi <csardi.gabor@gmail.com>'
+description = "Configurable Progress bars, they may include percentage, elapsed time, and/or the estimated completion time. They work in terminals, in 'Emacs' 'ESS', 'RStudio', 'Windows' 'Rgui' and the 'macOS' 'R.app'. The package also provides a 'C++' 'API', that works with or without 'Rcpp'."
+url = 'https://github.com/r-lib/progress#readme, http://r-lib.github.io/progress/'
+bugreports = 'https://github.com/r-lib/progress/issues'
+license = 'MIT + file LICENSE'
+imports = ['crayon', 'hms', 'prettyunits', 'R6']
+suggests = ['Rcpp', 'testthat (>= 3.0.0)', 'withr']
+roxygennote = '7.2.3'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Gábor Csárdi [aut, cre], Rich FitzJohn [aut], Posit Software, PBC [cph, fnd]'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
 
 [renv.packages.promises]
 package = 'promises'
@@ -1547,6 +1840,29 @@ suggests = ['survival']
 needscompilation = 'yes'
 author = 'Terry Therneau [aut], Beth Atkinson [aut, cre], Brian Ripley [trl] (producer of the initial R port, maintainer 1999-2017)'
 
+[renv.packages.rprojroot]
+package = 'rprojroot'
+version = '2.1.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.0.0)']
+hash = ''
+title = 'Finding Files in Project Subdirectories'
+'authors@r' = 'person(given = "Kirill", family = "M\u00fcller", role = c("aut", "cre"), email = "kirill@cynkra.com", comment = c(ORCID = "0000-0002-1416-3412"))'
+maintainer = 'Kirill Müller <kirill@cynkra.com>'
+description = "Robust, reliable and flexible paths to files below a project root. The 'root' of a project is defined as a directory that matches a certain criterion, e.g., it contains a certain regular file."
+url = 'https://rprojroot.r-lib.org/, https://github.com/r-lib/rprojroot'
+bugreports = 'https://github.com/r-lib/rprojroot/issues'
+license = 'MIT + file LICENSE'
+suggests = ['covr', 'knitr', 'lifecycle', 'rlang', 'rmarkdown', 'testthat (>= 3.2.0)', 'withr']
+vignettebuilder = 'knitr'
+roxygennote = '7.3.2.9000'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>)'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
+
 [renv.packages.sass]
 package = 'sass'
 version = '0.4.10'
@@ -1637,6 +1953,27 @@ roxygennote = '7.3.2'
 encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Victor Perrier [aut, cre, cph], Fanny Meyer [aut], David Granjon [aut], Ian Fellows [ctb] (Methods for mutating vertical tabs & updateMultiInput), Wil Davis [ctb] (numericRangeInput function), Spencer Matthews [ctb] (autoNumeric methods), JavaScript and CSS libraries authors [ctb, cph] (All authors are listed in LICENSE.md)'
+
+[renv.packages.shinycssloaders]
+package = 'shinycssloaders'
+version = '1.1.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.1)']
+hash = ''
+title = "Add Loading Animations to a 'shiny' Output While It's Recalculating"
+'authors@r' = 'c( person("Dean","Attali",email="daattali@gmail.com",role=c("aut","cre"), comment = c("Maintainer/developer of shinycssloaders since 2019", ORCID="0000-0002-5645-3493")), person("Andras","Sali",email="andras.sali@alphacruncher.hu",role=c("aut"),comment="Original creator of shinycssloaders package"), person("Luke","Hass",role=c("ctb","cph"),comment="Author of included CSS loader code") )'
+maintainer = 'Dean Attali <daattali@gmail.com>'
+description = "When a 'Shiny' output (such as a plot, table, map, etc.) is recalculating, it remains  visible but gets greyed out. Using 'shinycssloaders', you can add a loading animation (\"spinner\") to outputs instead. By wrapping a 'Shiny' output in 'withSpinner()', a spinner will automatically appear while the output is recalculating. You can also manually show and hide the spinner, or add a full-page spinner to cover the entire page. See the demo online at <https://daattali.com/shiny/shinycssloaders-demo/>."
+url = 'https://github.com/daattali/shinycssloaders, https://daattali.com/shiny/shinycssloaders-demo/'
+bugreports = 'https://github.com/daattali/shinycssloaders/issues'
+license = 'MIT + file LICENSE'
+imports = ['digest', 'glue', 'grDevices', 'htmltools (>= 0.3.5)', 'shiny']
+suggests = ['knitr', 'shinydisconnect', 'shinyjs']
+roxygennote = '7.2.3'
+encoding = 'UTF-8'
+needscompilation = 'no'
+author = 'Dean Attali [aut, cre] (Maintainer/developer of shinycssloaders since 2019, <https://orcid.org/0000-0002-5645-3493>), Andras Sali [aut] (Original creator of shinycssloaders package), Luke Hass [ctb, cph] (Author of included CSS loader code)'
 
 [renv.packages.sourcetools]
 package = 'sourcetools'
@@ -1851,6 +2188,29 @@ encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Yihui Xie [aut, cre, cph] (<https://orcid.org/0000-0003-0645-5666>), Posit Software, PBC [cph, fnd], Christophe Dervieux [ctb] (<https://orcid.org/0000-0003-4474-2498>), Devon Ryan [ctb] (<https://orcid.org/0000-0002-8549-0971>), Ethan Heinzen [ctb], Fernando Cagua [ctb]'
 
+[renv.packages.tzdb]
+package = 'tzdb'
+version = '0.5.0'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 4.0.0)']
+hash = ''
+title = 'Time Zone Database Information'
+'authors@r' = 'c( person("Davis", "Vaughan", , "davis@posit.co", role = c("aut", "cre")), person("Howard", "Hinnant", role = "cph", comment = "Author of the included date library"), person("Posit Software, PBC", role = c("cph", "fnd")) )'
+maintainer = 'Davis Vaughan <davis@posit.co>'
+description = "Provides an up-to-date copy of the Internet Assigned Numbers Authority (IANA) Time Zone Database. It is updated periodically to reflect changes made by political bodies to time zone boundaries, UTC offsets, and daylight saving time rules. Additionally, this package provides a C++ interface for working with the 'date' library. 'date' provides comprehensive support for working with dates and date-times, which this package exposes to make it easier for other R packages to utilize. Headers are provided for calendar specific calculations, along with a limited interface for time zone manipulations."
+url = 'https://tzdb.r-lib.org, https://github.com/r-lib/tzdb'
+bugreports = 'https://github.com/r-lib/tzdb/issues'
+license = 'MIT + file LICENSE'
+suggests = ['covr', 'testthat (>= 3.0.0)']
+linkingto = ['cpp11 (>= 0.5.2)']
+roxygennote = '7.3.2'
+encoding = 'UTF-8'
+needscompilation = 'yes'
+author = 'Davis Vaughan [aut, cre], Howard Hinnant [cph] (Author of the included date library), Posit Software, PBC [cph, fnd]'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'tidyverse/tidytemplate'
+
 [renv.packages.utf8]
 package = 'utf8'
 version = '1.2.6'
@@ -1917,6 +2277,31 @@ roxygennote = '7.2.3'
 encoding = 'UTF-8'
 needscompilation = 'no'
 author = 'Simon Garnier [aut, cre], Noam Ross [ctb, cph], Bob Rudis [ctb, cph], Marco Sciaini [ctb, cph], Antônio Pedro Camargo [ctb, cph], Cédric Scherer [ctb, cph]'
+
+[renv.packages.vroom]
+package = 'vroom'
+version = '1.6.5'
+source = 'Repository'
+repository = 'CRAN'
+depends = ['R (>= 3.6)']
+hash = ''
+title = 'Read and Write Rectangular Text Data Quickly'
+'authors@r' = 'c( person("Jim", "Hester", role = "aut", comment = c(ORCID = "0000-0002-2739-7082")), person("Hadley", "Wickham", , "hadley@posit.co", role = "aut", comment = c(ORCID = "0000-0003-4757-117X")), person("Jennifer", "Bryan", , "jenny@posit.co", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-6983-2759")), person("Shelby", "Bearrows", role = "ctb"), person("https://github.com/mandreyel/", role = "cph", comment = "mio library"), person("Jukka", "Jylänki", role = "cph", comment = "grisu3 implementation"), person("Mikkel", "Jørgensen", role = "cph", comment = "grisu3 implementation"), person("Posit Software, PBC", role = c("cph", "fnd")) )'
+maintainer = 'Jennifer Bryan <jenny@posit.co>'
+description = "The goal of 'vroom' is to read and write data (like 'csv', 'tsv' and 'fwf') quickly. When reading it uses a quick initial indexing step, then reads the values lazily , so only the data you actually use needs to be read.  The writer formats the data in parallel and writes to disk asynchronously from formatting."
+url = 'https://vroom.r-lib.org, https://github.com/tidyverse/vroom'
+bugreports = 'https://github.com/tidyverse/vroom/issues'
+license = 'MIT + file LICENSE'
+imports = ['bit64', 'cli (>= 3.2.0)', 'crayon', 'glue', 'hms', 'lifecycle (>= 1.0.3)', 'methods', 'rlang (>= 0.4.2)', 'stats', 'tibble (>= 2.0.0)', 'tidyselect', 'tzdb (>= 0.1.1)', 'vctrs (>= 0.2.0)', 'withr']
+suggests = ['archive', 'bench (>= 1.1.0)', 'covr', 'curl', 'dplyr', 'forcats', 'fs', 'ggplot2', 'knitr', 'patchwork', 'prettyunits', 'purrr', 'rmarkdown', 'rstudioapi', 'scales', 'spelling', 'testthat (>= 2.1.0)', 'tidyr', 'utils', 'waldo', 'xml2']
+linkingto = ['cpp11 (>= 0.2.0)', 'progress (>= 1.2.1)', 'tzdb (>= 0.1.1)']
+vignettebuilder = 'knitr'
+roxygennote = '7.2.3.9000'
+encoding = 'UTF-8'
+needscompilation = 'yes'
+author = 'Jim Hester [aut] (<https://orcid.org/0000-0002-2739-7082>), Hadley Wickham [aut] (<https://orcid.org/0000-0003-4757-117X>), Jennifer Bryan [aut, cre] (<https://orcid.org/0000-0002-6983-2759>), Shelby Bearrows [ctb], https://github.com/mandreyel/ [cph] (mio library), Jukka Jylänki [cph] (grisu3 implementation), Mikkel Jørgensen [cph] (grisu3 implementation), Posit Software, PBC [cph, fnd]'
+'config/testthat/edition' = '3'
+'config/needs/website' = 'nycflights13, tidyverse/tidytemplate'
 
 [renv.packages.withr]
 package = 'withr'
