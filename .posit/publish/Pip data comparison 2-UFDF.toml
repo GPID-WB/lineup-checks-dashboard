@@ -8,15 +8,16 @@ entrypoint = 'lineup-checks-revamp.qmd'
 validate = true
 files = [
   '/lineup-checks-revamp.qmd',
-  '/.posit/publish/PIP data comparison-8AFF.toml',
-  '/.posit/publish/deployments/deployment-JKMS.toml',
+  '/.posit/publish/Pip data comparison 2-UFDF.toml',
+  '/.posit/publish/deployments/deployment-L0OC.toml',
+  '/R/process_data.R',
+  '/R/change_detection.R',
+  '/R/summary_tables.R',
+  '/tests',
   '/data',
-  '/R',
-  '/styles.css',
-  '!/R/utils.R',
-  '!/R/save_deploy_data.R'
+  '/styles.css'
 ]
-title = 'PIP data comparison'
+title = 'Pip data comparison 2'
 
 [r]
 
