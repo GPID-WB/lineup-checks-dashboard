@@ -7,8 +7,9 @@
 
 library(fastverse)
 library(fst)
-library(httr)
+library(gh)
 
+options("pipsandbox.branch" = "update_2") # change this to the actual branch
 source("R/utils.R")
 
 # Helper: fetch one poverty line from pipr and validate non-empty result

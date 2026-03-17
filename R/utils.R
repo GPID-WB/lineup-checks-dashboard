@@ -1,9 +1,12 @@
 #' Load an .fst data file from the GPID-WB/pip-sandbox GitHub repository
 #'
 #' Downloads a file from the pip-sandbox repository at the given PPP year
-#' subdirectory and reads it as a `data.table`. Errors immediately if the
-#' HTTP request fails (e.g., 404, network outage) rather than silently
-#' writing an error page to disk.
+#' subdirectory and reads it as a `data.table`. Uses the GitHub Contents API
+#' via the `gh` package, which authenticates automatically via
+#' `GITHUB_TOKEN` / `GITHUB_PAT` environment variables or `gitcreds`.
+#'
+#' For files ≤ 1 MB the API returns base64-encoded content directly.
+#' For larger files it returns a `download_url` which is used as a fallback.
 #'
 #' @param filename Character scalar. Name of the `.fst` file to load
 #'   (e.g., `"aggregates.fst"`).
@@ -19,40 +22,56 @@
 #' @examples
 #' \dontrun{
 #'   agg <- load_from_repo("aggregates.fst", ppp_year = "2021")
+#'   agg <- load_from_repo("aggregates.fst", ppp_year = "2021", data_branch = "dev")
 #' }
 load_from_repo <- \(
   filename,
   ppp_year = c("2021", "2017"),
-  data_branch = "main"
+  data_branch = getOption("pipsandbox.branch", "main")
 ) {
   ppp_year <- as.character(ppp_year)
   ppp_year <- match.arg(ppp_year)
 
-  # GitHub raw content URL — update GH_ORG / GH_REPO if the repo moves
-  GH_BASE <- "https://raw.githubusercontent.com"
+  # Update GH_ORG / GH_REPO if the repo moves
   GH_ORG <- "GPID-WB"
   GH_REPO <- "pip-sandbox"
+  path <- paste("data", ppp_year, filename, sep = "/")
 
-  org_data <- paste(
-    GH_BASE,
-    GH_ORG,
-    GH_REPO,
-    data_branch,
-    "data",
-    ppp_year,
-    filename,
-    sep = "/"
+  # GitHub Contents API — authenticated via GITHUB_TOKEN / gitcreds
+  resp <- gh::gh(
+    "GET /repos/{owner}/{repo}/contents/{path}",
+    owner = GH_ORG,
+    repo = GH_REPO,
+    path = path,
+    ref = data_branch
   )
 
-  temp_file <- tempfile(fileext = fs::path_ext(filename))
-  req <- httr::GET(
-    org_data,
-    httr::write_disk(path = temp_file)
-  )
-  httr::stop_for_status(
-    req,
-    task = paste("download", filename, "for PPP", ppp_year)
-  )
+  temp_file <- tempfile(fileext = paste0(".", fs::path_ext(filename)))
+
+  # Files ≤ 1 MB: content is base64-encoded in the response.
+  # Files > 1 MB: content is NULL; fall back to download_url.
+  content_b64 <- resp[["content"]]
+  if (!is.null(content_b64) && nzchar(content_b64)) {
+    writeBin(jsonlite::base64_dec(content_b64), temp_file)
+  } else {
+    dl_url <- resp[["download_url"]]
+    if (is.null(dl_url)) {
+      rlang::abort(paste0(
+        "Cannot download '",
+        filename,
+        "' from branch '",
+        data_branch,
+        "': ",
+        "GitHub API returned neither content nor a download_url."
+      ))
+    }
+    utils::download.file(
+      dl_url,
+      destfile = temp_file,
+      mode = "wb",
+      quiet = TRUE
+    )
+  }
 
   fst::read_fst(temp_file, as.data.table = TRUE)
 }
