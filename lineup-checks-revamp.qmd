@@ -987,45 +987,76 @@ output$plot_country_ts <- plotly::renderPlotly({
 
   plot_data <- lineup_data[, list(
     reporting_year,
+    reporting_level,
     new_val = get(ind_x),
     old_val = get(ind_y)
   )]
   plot_data <- data.table::melt(
     plot_data,
-    id.vars = "reporting_year",
+    id.vars = c("reporting_year", "reporting_level"),
     variable.name = "version",
     value.name = "value"
   )
   plot_data[, version := fifelse(version == "new_val", "New", "Old")]
+
+  # ── Colour palette ────────────────────────────────────────────────────────
+  # New keeps #2E86AB (blue); Old keeps #A23B72 (pink) — same as before.
+  # Multiple reporting levels get progressively lighter shades within each
+  # hue family: the first level (e.g. national) is the full base colour;
+  # subsequent levels (urban, rural) are lightened toward white.
+  lighten_hex <- function(hex, amount) {
+    v <- col2rgb(hex) / 255
+    v <- v + (1 - v) * amount
+    rgb(v[1L], v[2L], v[3L])
+  }
+  base_new <- "#2E86AB"
+  base_old <- "#A23B72"
+  rl_order <- sort(unique(plot_data$reporting_level))
+  n_rl <- length(rl_order)
+  shades <- seq(0, 0.5, length.out = n_rl) # 0 = full colour, 0.5 = lighter
+
+  palette_vals <- c(
+    setNames(
+      vapply(shades, \(a) lighten_hex(base_new, a), character(1L)),
+      paste0(rl_order, " \u2014 New")
+    ),
+    setNames(
+      vapply(shades, \(a) lighten_hex(base_old, a), character(1L)),
+      paste0(rl_order, " \u2014 Old")
+    )
+  )
+  plot_data[, color_key := paste0(reporting_level, " \u2014 ", version)]
+  # ─────────────────────────────────────────────────────────────────────────
 
   p <- ggplot2::ggplot(
     plot_data,
     ggplot2::aes(
       x = reporting_year,
       y = value,
-      color = version,
-      linetype = version
+      color = color_key,
+      linetype = version,
+      group = interaction(reporting_level, version)
     )
   ) +
     ggplot2::geom_line(linewidth = 1) +
     ggplot2::geom_point(size = 2) +
     ggplot2::scale_color_manual(
-      values = c("New" = "#2E86AB", "Old" = "#A23B72")
+      values = palette_vals,
+      name = "Level \u2014 Version"
     ) +
     ggplot2::scale_linetype_manual(
-      values = c("New" = "solid", "Old" = "dashed")
+      values = c("New" = "solid", "Old" = "dashed"),
+      name = "Version"
     ) +
     ggplot2::labs(
       title = paste0(input$indicator, " \u2014 ", input$country_filter),
       x = "Year",
-      y = input$indicator,
-      color = "Version",
-      linetype = "Version"
+      y = input$indicator
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.position = "top")
 
-  plotly::ggplotly(p, tooltip = c("x", "y"))
+  plotly::ggplotly(p, tooltip = c("x", "y", "colour"))
 })
 
 # Country: Survey Data Comparison (DT)
