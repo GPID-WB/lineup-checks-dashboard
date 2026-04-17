@@ -10,7 +10,6 @@ server: shiny
 ```{r}
 #| context: setup
 #| label: setup
-
 library(data.table)
 library(DT)
 library(plotly)
@@ -35,11 +34,29 @@ ppp_data_2017 <- suppressWarnings(
 # Poverty lines differ by PPP version
 poverty_lines_2021 <- c("3.0", "4.2", "8.3")
 poverty_lines_2017 <- c("2.15", "3.65", "6.85")
+
+# Persist a deployment timestamp for the lifetime of the deployed app directory.
+# Posit Connect creates a fresh application directory on each deployment, so the
+# timestamp is refreshed on deploy but remains fixed within a deployment.
+deployment_time_path <- here::here(".deployment-time")
+if (!file.exists(deployment_time_path)) {
+  writeLines(as.character(Sys.time()), deployment_time_path)
+}
+deployment_time <- as.POSIXct(
+  readLines(deployment_time_path, warn = FALSE, n = 1L),
+  tz = Sys.timezone()
+)
+deployment_time_label <- format(
+  deployment_time,
+  "%Y-%m-%d %I:%M %p %Z"
+)
 ```
 
 # {.sidebar width="380px"}
 
 ## Data & Method Selection
+
+Deployment time: `r deployment_time_label`
 
 ### PPP Version
 ```{r}
@@ -107,7 +124,6 @@ shiny::selectInput(
 ```{r}
 #| context: server
 #| label: server-core
-
 # --- Core Reactives ---
 
 # Reactive: current PPP dataset (full list)
@@ -1383,10 +1399,6 @@ output$tbl_country_combined <- DT::renderDT({
 ```
 
 # Guide {orientation="columns"}
-
-::: {.deployment-note}
-**Deployment time:** 2026-04-17 1:44 PM EDT
-:::
 
 ## How to Use This Dashboard {width="50%"}
 
