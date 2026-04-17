@@ -1384,6 +1384,10 @@ output$tbl_country_combined <- DT::renderDT({
 
 # Guide {orientation="columns"}
 
+::: {.deployment-note}
+**Deployment time:** 2026-04-17 1:44 PM EDT
+:::
+
 ## How to Use This Dashboard {width="50%"}
 
 This dashboard compares **new** PIP pipeline data against **old** (published)
